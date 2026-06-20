@@ -151,14 +151,24 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
   `b_coil=Rᵀ·b`, `I=Ginv·(B_coil−b_coil)`, clamp por eje a `±I_max` (flags `Sat`/`AnySat`)
   y `Achieved=G·I+b_coil` (campo realmente generado). `TFieldController` envía a las
   fuentes vía uCoils (`Solve/Apply/ProgramField/AllOff`). **17/17 tests OK**.
-- 🔧 Siguiente: `uMainForm` (pestañas + asistente de calibración) y `uView3D`.
+- 🔧 **GUI** (`HelmCalib.lpi/.lpr`, `src/uMainForm.pas/.lfm`): proyecto Lazarus con
+  4 pestañas (`Conexión · Calibración · Programar campo · Vista 3D`). **Conexión operativa**:
+  conecta TCP a HelmMagControl (host/puerto, Ping) y UDP a SensorCast (IP móvil/Tx/Rx),
+  con `TTimer` (500 ms) mostrando `READ ALL` y magnetómetro+media K en vivo. Las otras 3
+  pestañas son placeholders. Compila con `lazbuild` y arranca OK (smoke test).
+- ⏳ Siguiente GUI: pestaña **Calibración** (asistente: barrido I → asentamiento →
+  promedio K con uSensor → `AddPoint` → `Fit`), **Programar campo** (uField) y **Vista 3D**.
 - ✅ Diseño aprobado (este CONTEXT.md).
 
 ### Build / tests
-- Tests de consola: `bash tests/run.sh` (compila con FPC y ejecuta los 5, exit=nº fallos). 106 asserts.
+- **GUI:** `bash build.sh` (genera `HelmCalib.res` con manifest vía `fpcres -of res` y
+  llama a `lazbuild`). Binario en `lib/x86_64-win64/HelmCalib.exe`.
+- **Tests de consola:** `bash tests/run.sh` (FPC + ejecuta los 5, exit=nº fallos). 106 asserts.
 - ⚠️ `TCoilClient`/`TSensorClient`: I/O de red **no** testeado sin hardware (HelmMagControl/móvil);
   solo compila y se verifica la lógica pura. Probar en puesta en marcha.
 - FPC en esta máquina: `C:\lazarus\fpc\3.2.2\bin\x86_64-win64\fpc.exe`; `lazbuild` en `C:\lazarus\`.
+- El `.res` del proyecto **no** se versiona (`*.res` en `.gitignore`); se regenera desde
+  `HelmCalib.rc`+`.manifest`. `lazbuild` no lo crea solo → por eso `build.sh`.
 - ⚠️ Pascal es **case-insensitive**: cuidado con params tipo `B`/`b`, `S`/`s`, `A`/`a`.
 
 ## Archivos clave (planificados)

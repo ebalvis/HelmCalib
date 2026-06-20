@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="12"/>
+    <General>
+      <Flags>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
+        <MainUnitHasScaledStatement Value="False"/>
+      </Flags>
+      <SessionStorage Value="InProjectDir"/>
+      <Title Value="HelmCalib"/>
+      <UseAppBundle Value="True"/>
+      <ResourceType Value="res"/>
+    </General>
+    <BuildModes>
+      <Item Name="Default" Default="True"/>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+    <RunParams>
+      <FormatVersion Value="2"/>
+    </RunParams>
+    <RequiredPackages>
+      <Item>
+        <PackageName Value="LCL"/>
+      </Item>
+    </RequiredPackages>
+    <Units>
+      <Unit>
+        <Filename Value="HelmCalib.lpr"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src/uMainForm.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmMain"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="uMainForm"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src/uMatrix.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uMatrix"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src/uCoils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uCoils"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src/uSensor.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uSensor"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src/uCalib.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uCalib"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src/uField.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uField"/>
+      </Unit>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <SearchPaths>
+      <OtherUnitFiles Value="src"/>
+      <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Linking>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
+    </Linking>
+  </CompilerOptions>
+</CONFIG>
