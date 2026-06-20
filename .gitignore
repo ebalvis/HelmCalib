@@ -1,0 +1,16 @@
+# Artefactos de compilación FPC / Lazarus
+*.exe
+*.o
+*.ppu
+*.a
+*.or
+*.compiled
+*.dbg
+*.bak
+*.~*
+*.lps
+*.res
+lib/
+backup/
+__history/
+__recovery/
