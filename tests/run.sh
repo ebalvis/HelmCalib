@@ -15,3 +15,5 @@ run_one() {
 }
 
 run_one TestMatrix
+run_one TestCoils
+run_one TestSensor

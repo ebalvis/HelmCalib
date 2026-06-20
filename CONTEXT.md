@@ -134,11 +134,21 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
   cuadrados afín `SolveAffine` (ecuaciones normales), `JacobiEig3` (eigen simétrica),
   `PolarDecomp` (M=R·G) y `SVD3`. **25/25 tests OK** (`tests/TestMatrix.lpr`,
   datos sintéticos con M/b/R/G conocidos).
-- 🔧 Siguiente: `uCoils` (TCP) + `uSensor` (UDP).
+- ✅ **`uCoils`** (`src/uCoils.pas`) — cliente TCP HelmMagControl. Lógica de protocolo
+  pura/testeable (`CoilFmtSetI/SetV/Out`, `CoilRespOK`, `CoilParseValue`,
+  `CoilParseReadAll`) + `TCoilClient` (ssockets, conexión persistente, CRLF al enviar /
+  lee hasta LF, `Ping/SetCurrent/SetVoltage/Output/AllOff/ReadAll`). **21/21 tests OK**.
+  Protocolo verificado contra `../HelmMagControl/Source/uTcpServerController.pas`.
+- ✅ **`uSensor`** (`src/uSensor.pas`) — cliente UDP SensorCast. `ParseSensorJSON` puro
+  (fpjson, magnetómetro obligatorio, acelerómetro opcional) + `TSensorClient` (TThread:
+  envía `HOLA`, recibe en :51043 con timeout, última muestra + media de K, mutex). **14/14 tests OK**.
+- 🔧 Siguiente: `uCalib` (acumular puntos, ajustar con `SolveAffine`, polar, perfil JSON).
 - ✅ Diseño aprobado (este CONTEXT.md).
 
 ### Build / tests
-- Tests de consola: `bash tests/run.sh` (compila con FPC y ejecuta, exit=nº fallos).
+- Tests de consola: `bash tests/run.sh` (compila con FPC y ejecuta los 3, exit=nº fallos). 60 asserts.
+- ⚠️ `TCoilClient`/`TSensorClient`: I/O de red **no** testeado sin hardware (HelmMagControl/móvil);
+  solo compila y se verifica la lógica pura. Probar en puesta en marcha.
 - FPC en esta máquina: `C:\lazarus\fpc\3.2.2\bin\x86_64-win64\fpc.exe`; `lazbuild` en `C:\lazarus\`.
 - ⚠️ Pascal es **case-insensitive**: cuidado con params tipo `B`/`b`, `S`/`s`, `A`/`a`.
 
