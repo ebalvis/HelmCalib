@@ -18,3 +18,4 @@ run_one TestMatrix
 run_one TestCoils
 run_one TestSensor
 run_one TestCalib
+run_one TestField
