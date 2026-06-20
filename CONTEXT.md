@@ -129,8 +129,18 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
 
 ## Estado actual
 
-- ⏳ **Todo pendiente** — proyecto recién definido, sin código.
+- ✅ **`uMatrix`** (`src/uMatrix.pas`) — álgebra 3×3/4×4 sin dependencias:
+  vectores, inversa 3×3 (cofactores) y 4×4 (Gauss-Jordan c/ pivoteo), mínimos
+  cuadrados afín `SolveAffine` (ecuaciones normales), `JacobiEig3` (eigen simétrica),
+  `PolarDecomp` (M=R·G) y `SVD3`. **25/25 tests OK** (`tests/TestMatrix.lpr`,
+  datos sintéticos con M/b/R/G conocidos).
+- 🔧 Siguiente: `uCoils` (TCP) + `uSensor` (UDP).
 - ✅ Diseño aprobado (este CONTEXT.md).
+
+### Build / tests
+- Tests de consola: `bash tests/run.sh` (compila con FPC y ejecuta, exit=nº fallos).
+- FPC en esta máquina: `C:\lazarus\fpc\3.2.2\bin\x86_64-win64\fpc.exe`; `lazbuild` en `C:\lazarus\`.
+- ⚠️ Pascal es **case-insensitive**: cuidado con params tipo `B`/`b`, `S`/`s`, `A`/`a`.
 
 ## Archivos clave (planificados)
 
