@@ -142,11 +142,16 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
 - ✅ **`uSensor`** (`src/uSensor.pas`) — cliente UDP SensorCast. `ParseSensorJSON` puro
   (fpjson, magnetómetro obligatorio, acelerómetro opcional) + `TSensorClient` (TThread:
   envía `HOLA`, recibe en :51043 con timeout, última muestra + media de K, mutex). **14/14 tests OK**.
-- 🔧 Siguiente: `uCalib` (acumular puntos, ajustar con `SolveAffine`, polar, perfil JSON).
+- ✅ **`uCalib`** (`src/uCalib.pas`) — modelo `B=M·I+b`. `TCalibration`: acumula puntos
+  (`AddPoint/RemovePoint/ClearPoints`), `Fit` (≥4 pts → `SolveAffine` + `PolarDecomp` →
+  M, b, R, G, Ginv, residuo RMS en µT), `Predict`, perfil JSON (`SaveToJSON/LoadFromJSON`,
+  `SaveToFile/LoadFromFile`; al cargar recomputa R/G/Ginv). Modelos de bobina A/B con
+  límites I/B (`CoilModelInfo`). **29/29 tests OK** (round-trip JSON y fichero incluidos).
+- 🔧 Siguiente: `uField` (inversa lazo abierto `I=Ginv·(B_coil − Rᵀ·b)` + clamp + envío por uCoils).
 - ✅ Diseño aprobado (este CONTEXT.md).
 
 ### Build / tests
-- Tests de consola: `bash tests/run.sh` (compila con FPC y ejecuta los 3, exit=nº fallos). 60 asserts.
+- Tests de consola: `bash tests/run.sh` (compila con FPC y ejecuta los 4, exit=nº fallos). 89 asserts.
 - ⚠️ `TCoilClient`/`TSensorClient`: I/O de red **no** testeado sin hardware (HelmMagControl/móvil);
   solo compila y se verifica la lógica pura. Probar en puesta en marcha.
 - FPC en esta máquina: `C:\lazarus\fpc\3.2.2\bin\x86_64-win64\fpc.exe`; `lazbuild` en `C:\lazarus\`.
