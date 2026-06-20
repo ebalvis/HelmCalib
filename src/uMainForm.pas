@@ -24,6 +24,7 @@ type
     tabField: TTabSheet;
     tabView: TTabSheet;
     Timer1: TTimer;
+    SweepTimer: TTimer;
     // --- Bobinas (TCP) ---
     gbCoils: TGroupBox;
     lblHost: TLabel;
@@ -47,8 +48,27 @@ type
     lblK: TLabel;
     edtK: TEdit;
     mSensor: TMemo;
-    // --- placeholders ---
-    lblCalibTodo: TLabel;
+    // --- Calibración (asistente) ---
+    lblSweepHdr: TLabel;
+    lblI0: TLabel;
+    edtI0: TEdit;
+    lblKc: TLabel;
+    edtKc: TEdit;
+    lblSettle: TLabel;
+    edtSettle: TEdit;
+    btnStartSweep: TButton;
+    btnStopSweep: TButton;
+    lblSweepProg: TLabel;
+    lblManualHdr: TLabel;
+    btnCapture: TButton;
+    btnRemovePoint: TButton;
+    btnClearPoints: TButton;
+    btnFit: TButton;
+    lblFitResult: TLabel;
+    btnSaveProfile: TButton;
+    lblCalStatus: TLabel;
+    lblPointsHdr: TLabel;
+    lstPoints: TListBox;
     // --- Programar campo ---
     lblModelHdr: TLabel;
     cmbModel: TComboBox;
@@ -91,6 +111,14 @@ type
     procedure btnCalcFieldClick(Sender: TObject);
     procedure btnSendFieldClick(Sender: TObject);
     procedure btnFieldOffClick(Sender: TObject);
+    procedure btnStartSweepClick(Sender: TObject);
+    procedure btnStopSweepClick(Sender: TObject);
+    procedure btnCaptureClick(Sender: TObject);
+    procedure btnRemovePointClick(Sender: TObject);
+    procedure btnClearPointsClick(Sender: TObject);
+    procedure btnFitClick(Sender: TObject);
+    procedure btnSaveProfileClick(Sender: TObject);
+    procedure SweepTimerTimer(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     FCoils: TCoilClient;
@@ -99,6 +127,9 @@ type
     FCalib: TCalibration;
     FLastSol: TFieldSolution;
     FHasSol: Boolean;
+    FSweep: array of TVec3;
+    FSweepIdx: Integer;
+    FSweeping: Boolean;
     procedure UpdateCoilsUI;
     procedure UpdateSensorUI;
     procedure RefreshCoils;
@@ -107,6 +138,11 @@ type
     procedure RefreshView3D;
     procedure UpdateModelStatus;
     function ReadTargetField: TVec3;
+    procedure BuildSweep(I0: Double);
+    procedure RefreshPointList;
+    procedure SetSweepCurrents(const v: TVec3);
+    procedure SweepSetUI(running: Boolean);
+    function SensorAndCoilsReady: Boolean;
   public
   end;
 
@@ -146,11 +182,14 @@ begin
   UpdateCoilsUI;
   UpdateSensorUI;
   UpdateModelStatus;
+  RefreshPointList;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   Timer1.Enabled := False;
+  SweepTimer.Enabled := False;
+  if Assigned(FCoils) and FCoils.Connected then FCoils.AllOff;
   if Assigned(FSensor) then
   begin
     FSensor.Terminate;
@@ -469,6 +508,242 @@ begin
     mField.Lines.Add(#13#10'→ ALL OFF: salidas desactivadas.')
   else
     mField.Lines.Add(#13#10'→ ERROR en ALL OFF.');
+end;
+
+{ ---- Calibración (asistente) ---- }
+
+function TfrmMain.SensorAndCoilsReady: Boolean;
+begin
+  Result := True;
+  if not FCoils.Connected then
+  begin
+    ShowMessage('Conecta las bobinas (pestaña Conexión).');
+    Exit(False);
+  end;
+  if not Assigned(FSensor) then
+  begin
+    ShowMessage('Conecta el sensor (pestaña Conexión).');
+    Exit(False);
+  end;
+end;
+
+procedure TfrmMain.BuildSweep(I0: Double);
+const
+  COMB: array[0..12, 0..2] of Double = (
+    ( 0,  0,  0),
+    ( 1,  0,  0), (-1,  0,  0),
+    ( 0,  1,  0), ( 0, -1,  0),
+    ( 0,  0,  1), ( 0,  0, -1),
+    ( 1,  1,  0), ( 1,  0,  1), ( 0,  1,  1),
+    ( 1,  1,  1), (-1,  1, -1), ( 1, -1,  1));
+var
+  i, j: Integer;
+  imax: Double;
+begin
+  imax := FCalib.Model.IMaxPerAxis;
+  SetLength(FSweep, Length(COMB));
+  for i := 0 to High(COMB) do
+    for j := 0 to 2 do
+    begin
+      FSweep[i][j] := COMB[i][j] * I0;
+      if FSweep[i][j] > imax then FSweep[i][j] := imax;
+      if FSweep[i][j] < -imax then FSweep[i][j] := -imax;
+    end;
+end;
+
+procedure TfrmMain.SetSweepCurrents(const v: TVec3);
+var ch: Integer;
+begin
+  for ch := 1 to 3 do
+  begin
+    FCoils.SetCurrent(ch, v[ch - 1]);
+    FCoils.Output(ch, True);
+  end;
+end;
+
+procedure TfrmMain.RefreshPointList;
+var
+  k: Integer;
+  p: TCalibPoint;
+begin
+  lstPoints.Items.BeginUpdate;
+  try
+    lstPoints.Clear;
+    for k := 0 to FCalib.PointCount - 1 do
+      if FCalib.GetPoint(k, p) then
+        lstPoints.Items.Add(Format(
+          '%2d  I=(%6.2f,%6.2f,%6.2f)  B=(%7.1f,%7.1f,%7.1f)',
+          [k, p.I[0], p.I[1], p.I[2], p.B[0], p.B[1], p.B[2]]));
+  finally
+    lstPoints.Items.EndUpdate;
+  end;
+  lblManualHdr.Caption := Format('Puntos (%d)', [FCalib.PointCount]);
+end;
+
+procedure TfrmMain.SweepSetUI(running: Boolean);
+begin
+  FSweeping := running;
+  btnStartSweep.Enabled := not running;
+  btnStopSweep.Enabled := running;
+  btnCapture.Enabled := not running;
+  btnClearPoints.Enabled := not running;
+  btnRemovePoint.Enabled := not running;
+  btnFit.Enabled := not running;
+  edtI0.Enabled := not running;
+  edtKc.Enabled := not running;
+  edtSettle.Enabled := not running;
+end;
+
+procedure TfrmMain.btnStartSweepClick(Sender: TObject);
+var I0, settle: Double;
+begin
+  if not SensorAndCoilsReady then Exit;
+  I0 := ParseFloatDot(edtI0.Text, 0);
+  if I0 <= 0 then
+  begin
+    ShowMessage('Indica una amplitud I0 > 0.');
+    Exit;
+  end;
+  settle := StrToIntDef(Trim(edtSettle.Text), 2000);
+  if settle < 300 then settle := 300;
+
+  if FCalib.PointCount > 0 then
+    if MessageDlg('Calibración',
+      'Se descartarán los puntos actuales y se empezará un barrido nuevo. ¿Continuar?',
+      mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit;
+
+  FCalib.ClearPoints;
+  RefreshPointList;
+  BuildSweep(I0);
+  FSweepIdx := 0;
+  SetSweepCurrents(FSweep[0]);
+  SweepTimer.Interval := Round(settle);
+  SweepTimer.Enabled := True;
+  SweepSetUI(True);
+  lblSweepProg.Caption := Format('Punto 1/%d (asentando…)', [Length(FSweep)]);
+end;
+
+procedure TfrmMain.SweepTimerTimer(Sender: TObject);
+var
+  mag: TVec3;
+  k: Integer;
+begin
+  if not FSweeping then Exit;
+  k := StrToIntDef(Trim(edtKc.Text), 10);
+  if not Assigned(FSensor) or not FSensor.GetAveragedMag(k, mag) then
+  begin
+    SweepTimer.Enabled := False;
+    FCoils.AllOff;
+    SweepSetUI(False);
+    lblSweepProg.Caption := 'Barrido abortado: sin datos del sensor.';
+    Exit;
+  end;
+
+  FCalib.AddPoint(FSweep[FSweepIdx], mag);
+  RefreshPointList;
+  Inc(FSweepIdx);
+
+  if FSweepIdx >= Length(FSweep) then
+  begin
+    SweepTimer.Enabled := False;
+    FCoils.AllOff;
+    SweepSetUI(False);
+    lblSweepProg.Caption := Format('Barrido completo: %d puntos. Pulsa "Ajustar modelo".',
+      [FCalib.PointCount]);
+  end
+  else
+  begin
+    SetSweepCurrents(FSweep[FSweepIdx]);
+    lblSweepProg.Caption := Format('Punto %d/%d (asentando…)',
+      [FSweepIdx + 1, Length(FSweep)]);
+  end;
+end;
+
+procedure TfrmMain.btnStopSweepClick(Sender: TObject);
+begin
+  SweepTimer.Enabled := False;
+  if FCoils.Connected then FCoils.AllOff;
+  SweepSetUI(False);
+  lblSweepProg.Caption := Format('Detenido (%d puntos).', [FCalib.PointCount]);
+end;
+
+procedure TfrmMain.btnCaptureClick(Sender: TObject);
+var
+  data: TCoilReadAll;
+  mag, cur: TVec3;
+  k: Integer;
+begin
+  if not SensorAndCoilsReady then Exit;
+  if not FCoils.ReadAll(data) then
+  begin
+    ShowMessage('No se pudo leer la corriente de las fuentes.');
+    Exit;
+  end;
+  k := StrToIntDef(Trim(edtKc.Text), 10);
+  if not FSensor.GetAveragedMag(k, mag) then
+  begin
+    ShowMessage('Aún no hay lecturas del magnetómetro.');
+    Exit;
+  end;
+  cur[0] := data[1].Curr; cur[1] := data[2].Curr; cur[2] := data[3].Curr;
+  FCalib.AddPoint(cur, mag);
+  RefreshPointList;
+end;
+
+procedure TfrmMain.btnRemovePointClick(Sender: TObject);
+begin
+  if lstPoints.ItemIndex < 0 then Exit;
+  FCalib.RemovePoint(lstPoints.ItemIndex);
+  RefreshPointList;
+  lblFitResult.Caption := 'Sin ajustar';
+  UpdateModelStatus;
+end;
+
+procedure TfrmMain.btnClearPointsClick(Sender: TObject);
+begin
+  FCalib.ClearPoints;
+  RefreshPointList;
+  lblFitResult.Caption := 'Sin ajustar';
+  UpdateModelStatus;
+end;
+
+procedure TfrmMain.btnFitClick(Sender: TObject);
+begin
+  if FCalib.PointCount < 4 then
+  begin
+    ShowMessage('Hacen falta al menos 4 puntos no coplanares (incluido I=0).');
+    Exit;
+  end;
+  if FCalib.Fit then
+  begin
+    lblFitResult.Caption := Format('Ajustado: residuo RMS = %.2f µT (%d puntos)',
+      [FCalib.ResidualRMS, FCalib.PointCount]);
+    UpdateModelStatus;
+  end
+  else
+  begin
+    lblFitResult.Caption := 'Ajuste fallido (puntos colineales o insuficientes).';
+    ShowMessage('No se pudo ajustar: la matriz es casi singular. '
+      + 'Asegura puntos en los 3 ejes y combinaciones.');
+  end;
+end;
+
+procedure TfrmMain.btnSaveProfileClick(Sender: TObject);
+var dlg: TSaveDialog;
+begin
+  dlg := TSaveDialog.Create(Self);
+  try
+    dlg.Filter := 'Perfil HelmCalib (*.json)|*.json';
+    dlg.DefaultExt := 'json';
+    dlg.FileName := 'helmcalib_perfil.json';
+    if not dlg.Execute then Exit;
+    if FCalib.SaveToFile(dlg.FileName) then
+      lblCalStatus.Caption := 'Perfil guardado: ' + dlg.FileName
+    else
+      ShowMessage('No se pudo guardar el perfil.');
+  finally
+    dlg.Free;
+  end;
 end;
 
 procedure TfrmMain.Timer1Timer(Sender: TObject);

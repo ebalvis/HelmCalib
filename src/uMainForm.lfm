@@ -197,12 +197,167 @@ object frmMain: TfrmMain
       Caption = 'Calibración'
       ClientHeight = 492
       ClientWidth = 832
-      object lblCalibTodo: TLabel
-        Left = 24
-        Top = 24
-        Width = 200
+      object lblSweepHdr: TLabel
+        Left = 12
+        Top = 10
+        Width = 230
         Height = 15
-        Caption = 'Asistente de calibración (pendiente).'
+        Caption = 'Asistente de calibración (barrido automático)'
+      end
+      object lblI0: TLabel
+        Left = 12
+        Top = 44
+        Width = 84
+        Height = 15
+        Caption = 'Amplitud I0 (A):'
+      end
+      object edtI0: TEdit
+        Left = 132
+        Top = 40
+        Width = 70
+        Height = 23
+        TabOrder = 0
+        Text = '5'
+      end
+      object lblKc: TLabel
+        Left = 12
+        Top = 76
+        Width = 66
+        Height = 15
+        Caption = 'Muestras K:'
+      end
+      object edtKc: TEdit
+        Left = 132
+        Top = 72
+        Width = 70
+        Height = 23
+        TabOrder = 1
+        Text = '10'
+      end
+      object lblSettle: TLabel
+        Left = 12
+        Top = 108
+        Width = 102
+        Height = 15
+        Caption = 'Asentamiento (ms):'
+      end
+      object edtSettle: TEdit
+        Left = 132
+        Top = 104
+        Width = 70
+        Height = 23
+        TabOrder = 2
+        Text = '2000'
+      end
+      object btnStartSweep: TButton
+        Left = 12
+        Top = 140
+        Width = 150
+        Height = 30
+        Caption = 'Iniciar barrido'
+        TabOrder = 3
+        OnClick = btnStartSweepClick
+      end
+      object btnStopSweep: TButton
+        Left = 172
+        Top = 140
+        Width = 110
+        Height = 30
+        Caption = 'Detener'
+        Enabled = False
+        TabOrder = 4
+        OnClick = btnStopSweepClick
+      end
+      object lblSweepProg: TLabel
+        Left = 12
+        Top = 180
+        Width = 30
+        Height = 15
+        Caption = 'Listo'
+      end
+      object lblManualHdr: TLabel
+        Left = 12
+        Top = 214
+        Width = 36
+        Height = 15
+        Caption = 'Puntos'
+      end
+      object btnCapture: TButton
+        Left = 12
+        Top = 234
+        Width = 270
+        Height = 28
+        Caption = 'Capturar punto (corriente actual)'
+        TabOrder = 5
+        OnClick = btnCaptureClick
+      end
+      object btnRemovePoint: TButton
+        Left = 12
+        Top = 270
+        Width = 130
+        Height = 26
+        Caption = 'Quitar seleccionado'
+        TabOrder = 6
+        OnClick = btnRemovePointClick
+      end
+      object btnClearPoints: TButton
+        Left = 152
+        Top = 270
+        Width = 130
+        Height = 26
+        Caption = 'Vaciar puntos'
+        TabOrder = 7
+        OnClick = btnClearPointsClick
+      end
+      object btnFit: TButton
+        Left = 12
+        Top = 312
+        Width = 130
+        Height = 30
+        Caption = 'Ajustar modelo'
+        TabOrder = 8
+        OnClick = btnFitClick
+      end
+      object lblFitResult: TLabel
+        Left = 152
+        Top = 320
+        Width = 64
+        Height = 15
+        Caption = 'Sin ajustar'
+      end
+      object btnSaveProfile: TButton
+        Left = 12
+        Top = 352
+        Width = 150
+        Height = 30
+        Caption = 'Guardar perfil…'
+        TabOrder = 9
+        OnClick = btnSaveProfileClick
+      end
+      object lblCalStatus: TLabel
+        Left = 12
+        Top = 396
+        Width = 4
+        Height = 15
+        Caption = ''
+      end
+      object lblPointsHdr: TLabel
+        Left = 440
+        Top = 10
+        Width = 138
+        Height = 15
+        Caption = 'Puntos capturados (I → B)'
+      end
+      object lstPoints: TListBox
+        Left = 440
+        Top = 32
+        Width = 380
+        Height = 448
+        Font.Name = 'Courier New'
+        ItemHeight = 0
+        ParentFont = False
+        ScrollWidth = 378
+        TabOrder = 10
       end
     end
     object tabField: TTabSheet
@@ -445,5 +600,12 @@ object frmMain: TfrmMain
     OnTimer = Timer1Timer
     Left = 760
     Top = 8
+  end
+  object SweepTimer: TTimer
+    Enabled = False
+    Interval = 2000
+    OnTimer = SweepTimerTimer
+    Left = 760
+    Top = 56
   end
 end

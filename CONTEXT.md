@@ -168,8 +168,14 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
   objetivo (X/Y/Z µT, marco bobina), `Calcular` → `FieldSolveCal` muestra corrientes
   ideales/clamp, avisos de saturación, campo logrado y error; fija el vector en la Vista 3D.
   `Enviar a fuentes` (TFieldController.Apply) y `Salida OFF` (requieren bobinas conectadas).
-- ⏳ Único pendiente GUI: pestaña **Calibración** (asistente: barrido I → asentamiento →
-  promedio K con uSensor → `AddPoint` → `Fit` → guardar perfil).
+- ✅ **GUI / Calibración** (`uMainForm`): asistente de barrido automático sobre `SweepTimer`
+  (state machine: fija I → espera asentamiento → promedia K muestras → `AddPoint`, 13 combos
+  0/±I0/mezclas, clamp a I_max). Captura manual (lee I de `READ ALL` + media K). Lista de
+  puntos, quitar/vaciar, `Ajustar modelo` (`Fit` + residuo RMS) y `Guardar perfil…`. El
+  patrón de barrido coincide con el ya verificado en `TestCalib` (recupera M/b exacto).
+  ⚠️ La secuencia en vivo solo se valida con hardware (bobinas + móvil).
+- 🎉 **Todas las pestañas operativas.** Pendiente: prueba de extremo a extremo con hardware
+  real y, opcional, i18n ES/EN, verificación de campo y registro de orientación (acelerómetro).
 - ✅ Diseño aprobado (este CONTEXT.md).
 
 ### Build / tests
