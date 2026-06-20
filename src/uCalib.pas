@@ -59,6 +59,11 @@ type
     function Fit: Boolean;
     function Predict(const I: TVec3): TVec3;  // M·I + b (requiere Fitted)
 
+    { Fija un modelo M, b directamente (sin ajustar puntos): recomputa R/G/Ginv. }
+    function SetManualModel(const AM: TMat3; const Ab: TVec3): Boolean;
+    { Modelo nominal de catálogo: M = diag(KNominal del modelo de bobina), b = 0. }
+    function SetNominalModel: Boolean;
+
     property Fitted: Boolean read FFitted;
     property M: TMat3 read FM;
     property b: TVec3 read Fb;
@@ -193,8 +198,7 @@ begin
   end;
 
   if not SolveAffine(Iarr, Barr, FM, Fb) then Exit(False);
-  if not PolarDecomp(FM, FR, FG) then Exit(False);
-  if not Mat3Inverse(FG, FGinv) then Exit(False);
+  if not (PolarDecomp(FM, FR, FG) and Mat3Inverse(FG, FGinv)) then Exit(False);
 
   // residuo RMS = sqrt( mean_k |B_k - (M·I_k + b)|² )
   sumsq := 0;
@@ -213,6 +217,31 @@ end;
 function TCalibration.Predict(const I: TVec3): TVec3;
 begin
   Result := Vec3Add(Mat3MulVec(FM, I), Fb);
+end;
+
+function TCalibration.SetManualModel(const AM: TMat3; const Ab: TVec3): Boolean;
+begin
+  FM := AM;
+  Fb := Ab;
+  FResidualRMS := 0;
+  if PolarDecomp(FM, FR, FG) and Mat3Inverse(FG, FGinv) then
+  begin
+    FFitDateStr := FormatDateTime('yyyy-mm-dd hh:nn:ss', Now);
+    FFitted := True;
+  end
+  else
+    FFitted := False;
+  Result := FFitted;
+end;
+
+function TCalibration.SetNominalModel: Boolean;
+var mm: TMat3; i, j: Integer;
+begin
+  for i := 0 to 2 do for j := 0 to 2 do mm[i, j] := 0;
+  mm[0, 0] := FModel.KNominal[0];
+  mm[1, 1] := FModel.KNominal[1];
+  mm[2, 2] := FModel.KNominal[2];
+  Result := SetManualModel(mm, Vec3(0, 0, 0));
 end;
 
 { ---- JSON ---- }

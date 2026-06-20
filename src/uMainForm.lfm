@@ -209,12 +209,141 @@ object frmMain: TfrmMain
       Caption = 'Programar campo'
       ClientHeight = 492
       ClientWidth = 832
-      object lblFieldTodo: TLabel
-        Left = 24
-        Top = 24
-        Width = 200
+      object lblModelHdr: TLabel
+        Left = 12
+        Top = 12
+        Width = 130
         Height = 15
-        Caption = 'Programación de campo (pendiente).'
+        Caption = 'Modelo de calibración'
+      end
+      object cmbModel: TComboBox
+        Left = 12
+        Top = 34
+        Width = 120
+        Height = 23
+        ItemIndex = 0
+        Items.Strings = (
+          'Modelo A'
+          'Modelo B'
+        )
+        Style = csDropDownList
+        TabOrder = 0
+        Text = 'Modelo A'
+      end
+      object btnNominal: TButton
+        Left = 144
+        Top = 33
+        Width = 130
+        Height = 26
+        Caption = 'Modelo nominal'
+        TabOrder = 1
+        OnClick = btnNominalClick
+      end
+      object btnLoadProfile: TButton
+        Left = 284
+        Top = 33
+        Width = 130
+        Height = 26
+        Caption = 'Cargar perfil…'
+        TabOrder = 2
+        OnClick = btnLoadProfileClick
+      end
+      object lblModelStatus: TLabel
+        Left = 12
+        Top = 70
+        Width = 60
+        Height = 15
+        Caption = 'Modelo: —'
+      end
+      object lblBHdr: TLabel
+        Left = 12
+        Top = 108
+        Width = 220
+        Height = 15
+        Caption = 'Campo objetivo B (marco bobina, µT)'
+      end
+      object lblBX: TLabel
+        Left = 12
+        Top = 140
+        Width = 12
+        Height = 15
+        Caption = 'X'
+      end
+      object edtBX: TEdit
+        Left = 32
+        Top = 136
+        Width = 100
+        Height = 23
+        TabOrder = 3
+        Text = '0'
+      end
+      object lblBY: TLabel
+        Left = 152
+        Top = 140
+        Width = 11
+        Height = 15
+        Caption = 'Y'
+      end
+      object edtBY: TEdit
+        Left = 172
+        Top = 136
+        Width = 100
+        Height = 23
+        TabOrder = 4
+        Text = '0'
+      end
+      object lblBZ: TLabel
+        Left = 292
+        Top = 140
+        Width = 11
+        Height = 15
+        Caption = 'Z'
+      end
+      object edtBZ: TEdit
+        Left = 312
+        Top = 136
+        Width = 100
+        Height = 23
+        TabOrder = 5
+        Text = '0'
+      end
+      object btnCalcField: TButton
+        Left = 12
+        Top = 176
+        Width = 130
+        Height = 30
+        Caption = 'Calcular'
+        TabOrder = 6
+        OnClick = btnCalcFieldClick
+      end
+      object btnSendField: TButton
+        Left = 152
+        Top = 176
+        Width = 150
+        Height = 30
+        Caption = 'Enviar a fuentes'
+        TabOrder = 7
+        OnClick = btnSendFieldClick
+      end
+      object btnFieldOff: TButton
+        Left = 312
+        Top = 176
+        Width = 120
+        Height = 30
+        Caption = 'Salida OFF'
+        TabOrder = 8
+        OnClick = btnFieldOffClick
+      end
+      object mField: TMemo
+        Left = 12
+        Top = 220
+        Width = 520
+        Height = 250
+        Font.Name = 'Courier New'
+        ParentFont = False
+        ReadOnly = True
+        ScrollBars = ssAutoBoth
+        TabOrder = 9
       end
     end
     object tabView: TTabSheet

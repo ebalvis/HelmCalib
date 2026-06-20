@@ -144,9 +144,10 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
   envía `HOLA`, recibe en :51043 con timeout, última muestra + media de K, mutex). **14/14 tests OK**.
 - ✅ **`uCalib`** (`src/uCalib.pas`) — modelo `B=M·I+b`. `TCalibration`: acumula puntos
   (`AddPoint/RemovePoint/ClearPoints`), `Fit` (≥4 pts → `SolveAffine` + `PolarDecomp` →
-  M, b, R, G, Ginv, residuo RMS en µT), `Predict`, perfil JSON (`SaveToJSON/LoadFromJSON`,
-  `SaveToFile/LoadFromFile`; al cargar recomputa R/G/Ginv). Modelos de bobina A/B con
-  límites I/B (`CoilModelInfo`). **29/29 tests OK** (round-trip JSON y fichero incluidos).
+  M, b, R, G, Ginv, residuo RMS en µT), `Predict`, `SetManualModel(M,b)`/`SetNominalModel`
+  (M=diag(KNominal), b=0), perfil JSON (`SaveToJSON/LoadFromJSON`, `SaveToFile/LoadFromFile`;
+  al cargar recomputa R/G/Ginv). Modelos de bobina A/B con límites I/B (`CoilModelInfo`).
+  **38/38 tests OK** (round-trip JSON/fichero, modelo manual/nominal).
 - ✅ **`uField`** (`src/uField.pas`) — lazo abierto. `FieldSolve`/`FieldSolveCal` (puro):
   `b_coil=Rᵀ·b`, `I=Ginv·(B_coil−b_coil)`, clamp por eje a `±I_max` (flags `Sat`/`AnySat`)
   y `Achieved=G·I+b_coil` (campo realmente generado). `TFieldController` envía a las
@@ -162,8 +163,13 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
   con arrastre y zoom con rueda. `RenderTo(Canvas,W,H)` permite render offline. Conectado a
   la pestaña **Vista 3D**: vector manual (X/Y/Z µT) o magnetómetro en vivo. Verificado con
   PNG offline (`tests/RenderView.lpi`, vector ejemplo |B|=74.8 µT correcto).
-- ⏳ Siguiente GUI: pestaña **Calibración** (asistente: barrido I → asentamiento →
-  promedio K con uSensor → `AddPoint` → `Fit`) y **Programar campo** (uField).
+- ✅ **GUI / Programar campo** (`uMainForm`): modelo compartido `FCalib` (arranca con
+  nominal A). Elige modelo A/B, `Modelo nominal` o `Cargar perfil…` (JSON). Introduces B
+  objetivo (X/Y/Z µT, marco bobina), `Calcular` → `FieldSolveCal` muestra corrientes
+  ideales/clamp, avisos de saturación, campo logrado y error; fija el vector en la Vista 3D.
+  `Enviar a fuentes` (TFieldController.Apply) y `Salida OFF` (requieren bobinas conectadas).
+- ⏳ Único pendiente GUI: pestaña **Calibración** (asistente: barrido I → asentamiento →
+  promedio K con uSensor → `AddPoint` → `Fit` → guardar perfil).
 - ✅ Diseño aprobado (este CONTEXT.md).
 
 ### Build / tests

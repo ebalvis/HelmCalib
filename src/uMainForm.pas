@@ -11,7 +11,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ComCtrls,
-  ExtCtrls, uMatrix, uCoils, uSensor, uView3D;
+  ExtCtrls, uMatrix, uCoils, uSensor, uCalib, uField, uView3D;
 
 type
 
@@ -49,7 +49,23 @@ type
     mSensor: TMemo;
     // --- placeholders ---
     lblCalibTodo: TLabel;
-    lblFieldTodo: TLabel;
+    // --- Programar campo ---
+    lblModelHdr: TLabel;
+    cmbModel: TComboBox;
+    btnNominal: TButton;
+    btnLoadProfile: TButton;
+    lblModelStatus: TLabel;
+    lblBHdr: TLabel;
+    lblBX: TLabel;
+    edtBX: TEdit;
+    lblBY: TLabel;
+    edtBY: TEdit;
+    lblBZ: TLabel;
+    edtBZ: TEdit;
+    btnCalcField: TButton;
+    btnSendField: TButton;
+    btnFieldOff: TButton;
+    mField: TMemo;
     // --- Vista 3D ---
     pnlViewCtrl: TPanel;
     lblViewHdr: TLabel;
@@ -70,19 +86,31 @@ type
     procedure btnSensorConnClick(Sender: TObject);
     procedure btnAplicarVecClick(Sender: TObject);
     procedure chkVecSensorClick(Sender: TObject);
+    procedure btnNominalClick(Sender: TObject);
+    procedure btnLoadProfileClick(Sender: TObject);
+    procedure btnCalcFieldClick(Sender: TObject);
+    procedure btnSendFieldClick(Sender: TObject);
+    procedure btnFieldOffClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     FCoils: TCoilClient;
     FSensor: TSensorClient;
     FView3D: TView3DPanel;
+    FCalib: TCalibration;
+    FLastSol: TFieldSolution;
+    FHasSol: Boolean;
     procedure UpdateCoilsUI;
     procedure UpdateSensorUI;
     procedure RefreshCoils;
     procedure RefreshSensor;
     procedure ApplyManualVector;
     procedure RefreshView3D;
+    procedure UpdateModelStatus;
+    function ReadTargetField: TVec3;
   public
   end;
+
+function ParseFloatDot(const s: string; def: Double = 0): Double;
 
 var
   frmMain: TfrmMain;
@@ -90,6 +118,14 @@ var
 implementation
 
 {$R *.lfm}
+
+function ParseFloatDot(const s: string; def: Double): Double;
+var fs: TFormatSettings;
+begin
+  fs := DefaultFormatSettings;
+  fs.DecimalSeparator := '.';
+  Result := StrToFloatDef(StringReplace(Trim(s), ',', '.', []), def, fs);
+end;
 
 { TfrmMain }
 
@@ -102,9 +138,14 @@ begin
   FView3D.Parent := tabView;
   FView3D.Align := alClient;
 
+  FCalib := TCalibration.Create(cmModelA);
+  FCalib.SetNominalModel;   // usable de inmediato con ganancias de catálogo
+  FHasSol := False;
+
   PageControl1.ActivePage := tabConn;
   UpdateCoilsUI;
   UpdateSensorUI;
+  UpdateModelStatus;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -117,6 +158,7 @@ begin
     FreeAndNil(FSensor);
   end;
   FreeAndNil(FCoils);
+  FreeAndNil(FCalib);
 end;
 
 procedure TfrmMain.UpdateCoilsUI;
@@ -260,13 +302,11 @@ begin
 end;
 
 procedure TfrmMain.ApplyManualVector;
-var v: TVec3; fs: TFormatSettings;
+var v: TVec3;
 begin
-  fs := DefaultFormatSettings;
-  fs.DecimalSeparator := '.';
-  v[0] := StrToFloatDef(StringReplace(Trim(edtVX.Text), ',', '.', []), 0, fs);
-  v[1] := StrToFloatDef(StringReplace(Trim(edtVY.Text), ',', '.', []), 0, fs);
-  v[2] := StrToFloatDef(StringReplace(Trim(edtVZ.Text), ',', '.', []), 0, fs);
+  v[0] := ParseFloatDot(edtVX.Text);
+  v[1] := ParseFloatDot(edtVY.Text);
+  v[2] := ParseFloatDot(edtVZ.Text);
   FView3D.SetTarget(v);
   lblVMod.Caption := Format('|B| = %.1f µT', [Vec3Norm(v)]);
 end;
@@ -300,6 +340,135 @@ begin
     edtVY.Text := Format('%.1f', [avg[1]]);
     edtVZ.Text := Format('%.1f', [avg[2]]);
   end;
+end;
+
+procedure TfrmMain.UpdateModelStatus;
+begin
+  if FCalib.Fitted then
+    lblModelStatus.Caption := Format(
+      'Modelo: %s · residuo RMS=%.2f µT · I_max=%.0f A · B_max=%.0f µT',
+      [FCalib.Model.Name, FCalib.ResidualRMS, FCalib.Model.IMaxPerAxis,
+       FCalib.Model.BMaxPerAxis])
+  else
+    lblModelStatus.Caption := 'Modelo: sin definir (usa "Modelo nominal" o "Cargar perfil…")';
+end;
+
+function TfrmMain.ReadTargetField: TVec3;
+begin
+  Result[0] := ParseFloatDot(edtBX.Text);
+  Result[1] := ParseFloatDot(edtBY.Text);
+  Result[2] := ParseFloatDot(edtBZ.Text);
+end;
+
+procedure TfrmMain.btnNominalClick(Sender: TObject);
+begin
+  if cmbModel.ItemIndex = 1 then
+    FCalib.SetModel(cmModelB)
+  else
+    FCalib.SetModel(cmModelA);
+  FCalib.SetNominalModel;
+  FHasSol := False;
+  UpdateModelStatus;
+end;
+
+procedure TfrmMain.btnLoadProfileClick(Sender: TObject);
+var dlg: TOpenDialog;
+begin
+  dlg := TOpenDialog.Create(Self);
+  try
+    dlg.Filter := 'Perfil HelmCalib (*.json)|*.json|Todos (*.*)|*.*';
+    dlg.DefaultExt := 'json';
+    if not dlg.Execute then Exit;
+    if FCalib.LoadFromFile(dlg.FileName) then
+    begin
+      if FCalib.Model.Kind = cmModelB then cmbModel.ItemIndex := 1
+      else cmbModel.ItemIndex := 0;
+      if not FCalib.Fitted then
+        ShowMessage('Perfil cargado, pero sin modelo ajustado (M/b). '
+          + 'Ajusta o usa modelo nominal.');
+    end
+    else
+      ShowMessage('No se pudo cargar el perfil: ' + dlg.FileName);
+    FHasSol := False;
+    UpdateModelStatus;
+  finally
+    dlg.Free;
+  end;
+end;
+
+procedure TfrmMain.btnCalcFieldClick(Sender: TObject);
+var
+  target, errVec: TVec3;
+  s: string;
+  ejes: array[0..2] of string = ('X', 'Y', 'Z');
+  k: Integer;
+begin
+  if not FCalib.Fitted then
+  begin
+    ShowMessage('No hay modelo de calibración. Define uno primero.');
+    Exit;
+  end;
+  target := ReadTargetField;
+  if not FieldSolveCal(FCalib, target, FLastSol) then
+  begin
+    ShowMessage('No se pudo resolver (modelo singular).');
+    Exit;
+  end;
+  FHasSol := True;
+  FView3D.SetTarget(target);   // se verá en la pestaña Vista 3D
+
+  s := Format('Objetivo B (bobina): X=%.2f  Y=%.2f  Z=%.2f µT  (|B|=%.2f)'#13#10#13#10,
+    [target[0], target[1], target[2], Vec3Norm(target)]);
+  s := s + 'Corrientes calculadas:'#13#10;
+  for k := 0 to 2 do
+    s := s + Format('  I%s = %+8.3f A  (ideal %+8.3f A)%s'#13#10,
+      [ejes[k], FLastSol.I[k], FLastSol.IDeal[k],
+       BoolToStr(FLastSol.Sat[k], '  ¡SATURADO!', '')]);
+  if FLastSol.AnySat then
+    s := s + #13#10'⚠ Algún eje satura: el campo logrado diferirá del objetivo.'#13#10;
+  errVec := Vec3Sub(FLastSol.Achieved, target);
+  s := s + Format(#13#10'Campo logrado (bobina): X=%.2f  Y=%.2f  Z=%.2f µT'#13#10,
+    [FLastSol.Achieved[0], FLastSol.Achieved[1], FLastSol.Achieved[2]]);
+  s := s + Format('Error vs objetivo: %.2f µT', [Vec3Norm(errVec)]);
+  mField.Text := s;
+  UpdateModelStatus;
+end;
+
+procedure TfrmMain.btnSendFieldClick(Sender: TObject);
+var ctrl: TFieldController;
+begin
+  if not FHasSol then
+  begin
+    ShowMessage('Primero pulsa "Calcular".');
+    Exit;
+  end;
+  if not FCoils.Connected then
+  begin
+    ShowMessage('Las bobinas no están conectadas (pestaña Conexión).');
+    Exit;
+  end;
+  ctrl := TFieldController.Create(FCalib, FCoils);
+  try
+    if ctrl.Apply(FLastSol) then
+      mField.Lines.Add(#13#10'→ Corrientes enviadas y salidas ON.')
+    else
+      mField.Lines.Add(#13#10'→ ERROR al enviar a las fuentes.');
+  finally
+    ctrl.Free;
+  end;
+end;
+
+procedure TfrmMain.btnFieldOffClick(Sender: TObject);
+begin
+  if not FCoils.Connected then
+  begin
+    ShowMessage('Las bobinas no están conectadas.');
+    Exit;
+  end;
+  if FCoils.AllOff then
+    mField.Lines.Add(#13#10'→ ALL OFF: salidas desactivadas.')
+  else
+    mField.Lines.Add(#13#10'→ ERROR en ALL OFF.');
 end;
 
 procedure TfrmMain.Timer1Timer(Sender: TObject);

@@ -131,6 +131,23 @@ begin
     cal.Free;
   end;
 
+  WriteLn('Modelo manual / nominal:');
+  cal := TCalibration.Create(cmModelA);
+  try
+    Check('SetManualModel', cal.SetManualModel(M0, b0));
+    Check('Fitted', cal.Fitted);
+    Check('M = M0', Mat3Near(cal.M, M0));
+    Check('R = R0 (polar)', Mat3Near(cal.R, R0));
+
+    Check('SetNominalModel', cal.SetNominalModel);
+    Check('M diagonal = KNominal X', Near(cal.M[0, 0], cal.Model.KNominal[0]));
+    Check('M fuera de diag = 0', Near(cal.M[0, 1], 0.0) and Near(cal.M[1, 2], 0.0));
+    Check('b = 0', Near(cal.b[0], 0.0) and Near(cal.b[1], 0.0) and Near(cal.b[2], 0.0));
+    Check('R nominal = I', Mat3Near(cal.R, Mat3Identity, 1e-9));
+  finally
+    cal.Free;
+  end;
+
   WriteLn;
   WriteLn(Format('Resultado: %d ok, %d fallos', [gPass, gFail]));
   Halt(gFail);
