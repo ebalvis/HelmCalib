@@ -221,12 +221,93 @@ object frmMain: TfrmMain
       Caption = 'Vista 3D'
       ClientHeight = 492
       ClientWidth = 832
-      object lblViewTodo: TLabel
-        Left = 24
-        Top = 24
-        Width = 200
-        Height = 15
-        Caption = 'Vista 3D wireframe (pendiente).'
+      object pnlViewCtrl: TPanel
+        Left = 0
+        Top = 0
+        Width = 188
+        Height = 492
+        Align = alLeft
+        BevelOuter = bvNone
+        ClientHeight = 492
+        ClientWidth = 188
+        TabOrder = 0
+        object lblViewHdr: TLabel
+          Left = 12
+          Top = 12
+          Width = 120
+          Height = 15
+          Caption = 'Vector B (µT, marco bobina)'
+        end
+        object lblVX: TLabel
+          Left = 12
+          Top = 44
+          Width = 12
+          Height = 15
+          Caption = 'X'
+        end
+        object edtVX: TEdit
+          Left = 36
+          Top = 40
+          Width = 120
+          Height = 23
+          TabOrder = 0
+          Text = '0'
+        end
+        object lblVY: TLabel
+          Left = 12
+          Top = 76
+          Width = 11
+          Height = 15
+          Caption = 'Y'
+        end
+        object edtVY: TEdit
+          Left = 36
+          Top = 72
+          Width = 120
+          Height = 23
+          TabOrder = 1
+          Text = '0'
+        end
+        object lblVZ: TLabel
+          Left = 12
+          Top = 108
+          Width = 11
+          Height = 15
+          Caption = 'Z'
+        end
+        object edtVZ: TEdit
+          Left = 36
+          Top = 104
+          Width = 120
+          Height = 23
+          TabOrder = 2
+          Text = '0'
+        end
+        object btnAplicarVec: TButton
+          Left = 12
+          Top = 140
+          Width = 144
+          Height = 30
+          Caption = 'Mostrar vector'
+          TabOrder = 3
+          OnClick = btnAplicarVecClick
+        end
+        object chkVecSensor: TCheckBox
+          Left = 12
+          Top = 184
+          Width = 170
+          Height = 19
+          Caption = 'Usar magnetómetro en vivo'
+          TabOrder = 4
+          OnClick = chkVecSensorClick
+        end
+        object lblVMod: TLabel
+          Left = 12
+          Top = 220
+          Width = 60
+          Height = 15
+          Caption = '|B| = —'
+        end
       end
     end
   end

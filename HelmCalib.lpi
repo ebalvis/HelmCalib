@@ -66,6 +66,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="uField"/>
       </Unit>
+      <Unit>
+        <Filename Value="src/uView3D.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uView3D"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

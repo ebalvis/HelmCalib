@@ -11,6 +11,7 @@
 *.lps
 *.res
 lib/
+tests/view3d.png
 backup/
 __history/
 __recovery/

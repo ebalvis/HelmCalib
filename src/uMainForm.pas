@@ -11,7 +11,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ComCtrls,
-  ExtCtrls, uMatrix, uCoils, uSensor;
+  ExtCtrls, uMatrix, uCoils, uSensor, uView3D;
 
 type
 
@@ -50,21 +50,37 @@ type
     // --- placeholders ---
     lblCalibTodo: TLabel;
     lblFieldTodo: TLabel;
-    lblViewTodo: TLabel;
+    // --- Vista 3D ---
+    pnlViewCtrl: TPanel;
+    lblViewHdr: TLabel;
+    lblVX: TLabel;
+    edtVX: TEdit;
+    lblVY: TLabel;
+    edtVY: TEdit;
+    lblVZ: TLabel;
+    edtVZ: TEdit;
+    btnAplicarVec: TButton;
+    chkVecSensor: TCheckBox;
+    lblVMod: TLabel;
 
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnCoilsConnClick(Sender: TObject);
     procedure btnPingClick(Sender: TObject);
     procedure btnSensorConnClick(Sender: TObject);
+    procedure btnAplicarVecClick(Sender: TObject);
+    procedure chkVecSensorClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     FCoils: TCoilClient;
     FSensor: TSensorClient;
+    FView3D: TView3DPanel;
     procedure UpdateCoilsUI;
     procedure UpdateSensorUI;
     procedure RefreshCoils;
     procedure RefreshSensor;
+    procedure ApplyManualVector;
+    procedure RefreshView3D;
   public
   end;
 
@@ -81,6 +97,11 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   FCoils := TCoilClient.Create(2000);
   FSensor := nil;
+
+  FView3D := TView3DPanel.Create(Self);
+  FView3D.Parent := tabView;
+  FView3D.Align := alClient;
+
   PageControl1.ActivePage := tabConn;
   UpdateCoilsUI;
   UpdateSensorUI;
@@ -238,10 +259,54 @@ begin
   mSensor.Text := s;
 end;
 
+procedure TfrmMain.ApplyManualVector;
+var v: TVec3; fs: TFormatSettings;
+begin
+  fs := DefaultFormatSettings;
+  fs.DecimalSeparator := '.';
+  v[0] := StrToFloatDef(StringReplace(Trim(edtVX.Text), ',', '.', []), 0, fs);
+  v[1] := StrToFloatDef(StringReplace(Trim(edtVY.Text), ',', '.', []), 0, fs);
+  v[2] := StrToFloatDef(StringReplace(Trim(edtVZ.Text), ',', '.', []), 0, fs);
+  FView3D.SetTarget(v);
+  lblVMod.Caption := Format('|B| = %.1f µT', [Vec3Norm(v)]);
+end;
+
+procedure TfrmMain.btnAplicarVecClick(Sender: TObject);
+begin
+  chkVecSensor.Checked := False;
+  ApplyManualVector;
+end;
+
+procedure TfrmMain.chkVecSensorClick(Sender: TObject);
+begin
+  edtVX.Enabled := not chkVecSensor.Checked;
+  edtVY.Enabled := not chkVecSensor.Checked;
+  edtVZ.Enabled := not chkVecSensor.Checked;
+  btnAplicarVec.Enabled := not chkVecSensor.Checked;
+  if not chkVecSensor.Checked then
+    ApplyManualVector;
+end;
+
+procedure TfrmMain.RefreshView3D;
+var avg: TVec3;
+begin
+  if not chkVecSensor.Checked then Exit;
+  if not Assigned(FSensor) then Exit;
+  if FSensor.GetAveragedMag(StrToIntDef(Trim(edtK.Text), 10), avg) then
+  begin
+    FView3D.SetTarget(avg);
+    lblVMod.Caption := Format('|B| = %.1f µT', [Vec3Norm(avg)]);
+    edtVX.Text := Format('%.1f', [avg[0]]);
+    edtVY.Text := Format('%.1f', [avg[1]]);
+    edtVZ.Text := Format('%.1f', [avg[2]]);
+  end;
+end;
+
 procedure TfrmMain.Timer1Timer(Sender: TObject);
 begin
   RefreshCoils;
   RefreshSensor;
+  RefreshView3D;
 end;
 
 end.

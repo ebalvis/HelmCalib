@@ -156,8 +156,14 @@ marco sensor `R·B_coil_target` y mostrar el error (módulo y ángulo).
   conecta TCP a HelmMagControl (host/puerto, Ping) y UDP a SensorCast (IP móvil/Tx/Rx),
   con `TTimer` (500 ms) mostrando `READ ALL` y magnetómetro+media K en vivo. Las otras 3
   pestañas son placeholders. Compila con `lazbuild` y arranca OK (smoke test).
+- ✅ **`uView3D`** (`src/uView3D.pas`) — `TView3DPanel` (TCustomControl): wireframe de los
+  3 pares de bobinas a escala (diámetros 2046/2000/1954) + ejes XYZ + flecha del vector B
+  (objetivo amarillo / medido cian) sobre Canvas, proyección perspectiva propia, rotación
+  con arrastre y zoom con rueda. `RenderTo(Canvas,W,H)` permite render offline. Conectado a
+  la pestaña **Vista 3D**: vector manual (X/Y/Z µT) o magnetómetro en vivo. Verificado con
+  PNG offline (`tests/RenderView.lpi`, vector ejemplo |B|=74.8 µT correcto).
 - ⏳ Siguiente GUI: pestaña **Calibración** (asistente: barrido I → asentamiento →
-  promedio K con uSensor → `AddPoint` → `Fit`), **Programar campo** (uField) y **Vista 3D**.
+  promedio K con uSensor → `AddPoint` → `Fit`) y **Programar campo** (uField).
 - ✅ Diseño aprobado (este CONTEXT.md).
 
 ### Build / tests
