@@ -80,6 +80,15 @@ and the resulting B vector points in the corresponding direction.
 
 ![Calibration current sweep](docs/calib-sweep.gif)
 
+### Programming a field
+
+Once calibrated (or with the nominal catalog model), you request a target B vector
+in the coil frame and the app computes the per-axis currents `I = G⁻¹·(B − Rᵀ·b)`,
+clamping to the current limits. The animation shows the target B sweeping through
+directions and the currents computed for each one.
+
+![Program field — computed currents](docs/program-field.gif)
+
 ## Build & test
 
 Requires **Lazarus / FPC 3.2.2**.

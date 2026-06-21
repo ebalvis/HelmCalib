@@ -10,7 +10,7 @@ uses
   uMatrix, uView3D;
 
 const
-  FRAMES = 24;
+  FRAMES = 36;
   W = 460;
   H = 380;
 
@@ -42,7 +42,7 @@ begin
       end;
       with TGIFGraphicControlExtension.Create(frame) do
       begin
-        Delay := 6;                  // 1/100 s por fotograma
+        Delay := 12;                 // 1/100 s por fotograma (giro pausado)
         Disposal := dmBackground;
       end;
     end;

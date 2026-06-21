@@ -14,8 +14,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- **MIT license** (`LICENSE`) and README media: an animated 3D preview, an animated
-  calibration-sweep preview, and per-tab screenshots.
+- **MIT license** (`LICENSE`) and README media: animated previews of the 3D view,
+  the calibration sweep, and field programming (computed currents), plus per-tab
+  screenshots.
 - **Delphi (VCL / Win64) port** in `delphi/`, tested with RAD Studio Athens
   (Delphi 37.0). Same architecture and units; platform dependencies adapted:
   networking with **Indy 10** (`TIdTCPClient`/`TIdUDPClient`), JSON with
