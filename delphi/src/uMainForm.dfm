@@ -1,0 +1,596 @@
+﻿object frmMain: TfrmMain
+  Left = 300
+  Top = 180
+  Caption = 'HelmCalib'
+  ClientHeight = 520
+  ClientWidth = 840
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  object PageControl1: TPageControl
+    Left = 0
+    Top = 0
+    Width = 840
+    Height = 520
+    ActivePage = tabConn
+    Align = alClient
+    TabIndex = 0
+    object tabConn: TTabSheet
+      Caption = 'Conexión'
+      object gbCoils: TGroupBox
+        Left = 8
+        Top = 8
+        Width = 404
+        Height = 476
+        Caption = ' Bobinas (TCP — HelmMagControl) '
+        TabOrder = 0
+        object lblHost: TLabel
+          Left = 12
+          Top = 28
+          Width = 28
+          Height = 15
+          Caption = 'Host:'
+        end
+        object edtHost: TEdit
+          Left = 56
+          Top = 24
+          Width = 180
+          Height = 23
+          TabOrder = 0
+          Text = '127.0.0.1'
+        end
+        object lblPort: TLabel
+          Left = 248
+          Top = 28
+          Width = 40
+          Height = 15
+          Caption = 'Puerto:'
+        end
+        object edtPort: TEdit
+          Left = 296
+          Top = 24
+          Width = 70
+          Height = 23
+          TabOrder = 1
+          Text = '4444'
+        end
+        object btnCoilsConn: TButton
+          Left = 12
+          Top = 60
+          Width = 110
+          Height = 30
+          Caption = 'Conectar'
+          TabOrder = 2
+          OnClick = btnCoilsConnClick
+        end
+        object btnPing: TButton
+          Left = 132
+          Top = 60
+          Width = 80
+          Height = 30
+          Caption = 'Ping'
+          TabOrder = 3
+          OnClick = btnPingClick
+        end
+        object lblCoilsStatus: TLabel
+          Left = 232
+          Top = 68
+          Width = 80
+          Height = 15
+          Caption = 'Desconectado'
+        end
+        object mCoils: TMemo
+          Left = 12
+          Top = 100
+          Width = 376
+          Height = 344
+          Font.Name = 'Courier New'
+          ParentFont = False
+          ReadOnly = True
+          ScrollBars = ssBoth
+          TabOrder = 4
+        end
+      end
+      object gbSensor: TGroupBox
+        Left = 420
+        Top = 8
+        Width = 404
+        Height = 476
+        Caption = ' Sensor (UDP — SensorCast) '
+        TabOrder = 1
+        object lblIP: TLabel
+          Left = 12
+          Top = 28
+          Width = 50
+          Height = 15
+          Caption = 'IP móvil:'
+        end
+        object edtIP: TEdit
+          Left = 70
+          Top = 24
+          Width = 150
+          Height = 23
+          TabOrder = 0
+          Text = '192.168.1.50'
+        end
+        object lblTx: TLabel
+          Left = 230
+          Top = 28
+          Width = 18
+          Height = 15
+          Caption = 'Tx:'
+        end
+        object edtTx: TEdit
+          Left = 252
+          Top = 24
+          Width = 50
+          Height = 23
+          TabOrder = 1
+          Text = '51042'
+        end
+        object lblRx: TLabel
+          Left = 312
+          Top = 28
+          Width = 19
+          Height = 15
+          Caption = 'Rx:'
+        end
+        object edtRx: TEdit
+          Left = 336
+          Top = 24
+          Width = 50
+          Height = 23
+          TabOrder = 2
+          Text = '51043'
+        end
+        object btnSensorConn: TButton
+          Left = 12
+          Top = 60
+          Width = 110
+          Height = 30
+          Caption = 'Conectar'
+          TabOrder = 3
+          OnClick = btnSensorConnClick
+        end
+        object lblSensorStatus: TLabel
+          Left = 132
+          Top = 68
+          Width = 80
+          Height = 15
+          Caption = 'Desconectado'
+        end
+        object lblK: TLabel
+          Left = 12
+          Top = 102
+          Width = 64
+          Height = 15
+          Caption = 'Promedio K:'
+        end
+        object edtK: TEdit
+          Left = 86
+          Top = 98
+          Width = 50
+          Height = 23
+          TabOrder = 4
+          Text = '10'
+        end
+        object mSensor: TMemo
+          Left = 12
+          Top = 130
+          Width = 376
+          Height = 314
+          Font.Name = 'Courier New'
+          ParentFont = False
+          ReadOnly = True
+          ScrollBars = ssBoth
+          TabOrder = 5
+        end
+      end
+    end
+    object tabCalib: TTabSheet
+      Caption = 'Calibración'
+      object lblSweepHdr: TLabel
+        Left = 12
+        Top = 10
+        Width = 230
+        Height = 15
+        Caption = 'Asistente de calibración (barrido automático)'
+      end
+      object lblI0: TLabel
+        Left = 12
+        Top = 44
+        Width = 84
+        Height = 15
+        Caption = 'Amplitud I0 (A):'
+      end
+      object edtI0: TEdit
+        Left = 132
+        Top = 40
+        Width = 70
+        Height = 23
+        TabOrder = 0
+        Text = '5'
+      end
+      object lblKc: TLabel
+        Left = 12
+        Top = 76
+        Width = 66
+        Height = 15
+        Caption = 'Muestras K:'
+      end
+      object edtKc: TEdit
+        Left = 132
+        Top = 72
+        Width = 70
+        Height = 23
+        TabOrder = 1
+        Text = '10'
+      end
+      object lblSettle: TLabel
+        Left = 12
+        Top = 108
+        Width = 102
+        Height = 15
+        Caption = 'Asentamiento (ms):'
+      end
+      object edtSettle: TEdit
+        Left = 132
+        Top = 104
+        Width = 70
+        Height = 23
+        TabOrder = 2
+        Text = '2000'
+      end
+      object btnStartSweep: TButton
+        Left = 12
+        Top = 140
+        Width = 150
+        Height = 30
+        Caption = 'Iniciar barrido'
+        TabOrder = 3
+        OnClick = btnStartSweepClick
+      end
+      object btnStopSweep: TButton
+        Left = 172
+        Top = 140
+        Width = 110
+        Height = 30
+        Caption = 'Detener'
+        Enabled = False
+        TabOrder = 4
+        OnClick = btnStopSweepClick
+      end
+      object lblSweepProg: TLabel
+        Left = 12
+        Top = 180
+        Width = 30
+        Height = 15
+        Caption = 'Listo'
+      end
+      object lblManualHdr: TLabel
+        Left = 12
+        Top = 214
+        Width = 36
+        Height = 15
+        Caption = 'Puntos'
+      end
+      object btnCapture: TButton
+        Left = 12
+        Top = 234
+        Width = 270
+        Height = 28
+        Caption = 'Capturar punto (corriente actual)'
+        TabOrder = 5
+        OnClick = btnCaptureClick
+      end
+      object btnRemovePoint: TButton
+        Left = 12
+        Top = 270
+        Width = 130
+        Height = 26
+        Caption = 'Quitar seleccionado'
+        TabOrder = 6
+        OnClick = btnRemovePointClick
+      end
+      object btnClearPoints: TButton
+        Left = 152
+        Top = 270
+        Width = 130
+        Height = 26
+        Caption = 'Vaciar puntos'
+        TabOrder = 7
+        OnClick = btnClearPointsClick
+      end
+      object btnFit: TButton
+        Left = 12
+        Top = 312
+        Width = 130
+        Height = 30
+        Caption = 'Ajustar modelo'
+        TabOrder = 8
+        OnClick = btnFitClick
+      end
+      object lblFitResult: TLabel
+        Left = 152
+        Top = 320
+        Width = 64
+        Height = 15
+        Caption = 'Sin ajustar'
+      end
+      object btnSaveProfile: TButton
+        Left = 12
+        Top = 352
+        Width = 150
+        Height = 30
+        Caption = 'Guardar perfil…'
+        TabOrder = 9
+        OnClick = btnSaveProfileClick
+      end
+      object lblCalStatus: TLabel
+        Left = 12
+        Top = 396
+        Width = 4
+        Height = 15
+        Caption = ''
+      end
+      object lblPointsHdr: TLabel
+        Left = 440
+        Top = 10
+        Width = 138
+        Height = 15
+        Caption = 'Puntos capturados (I → B)'
+      end
+      object lstPoints: TListBox
+        Left = 440
+        Top = 32
+        Width = 380
+        Height = 448
+        Font.Name = 'Courier New'
+        ItemHeight = 0
+        ParentFont = False
+        ScrollWidth = 378
+        TabOrder = 10
+      end
+    end
+    object tabField: TTabSheet
+      Caption = 'Programar campo'
+      object lblModelHdr: TLabel
+        Left = 12
+        Top = 12
+        Width = 130
+        Height = 15
+        Caption = 'Modelo de calibración'
+      end
+      object cmbModel: TComboBox
+        Left = 12
+        Top = 34
+        Width = 120
+        Height = 23
+        ItemIndex = 0
+        Items.Strings = (
+          'Modelo A'
+          'Modelo B'
+        )
+        Style = csDropDownList
+        TabOrder = 0
+        Text = 'Modelo A'
+      end
+      object btnNominal: TButton
+        Left = 144
+        Top = 33
+        Width = 130
+        Height = 26
+        Caption = 'Modelo nominal'
+        TabOrder = 1
+        OnClick = btnNominalClick
+      end
+      object btnLoadProfile: TButton
+        Left = 284
+        Top = 33
+        Width = 130
+        Height = 26
+        Caption = 'Cargar perfil…'
+        TabOrder = 2
+        OnClick = btnLoadProfileClick
+      end
+      object lblModelStatus: TLabel
+        Left = 12
+        Top = 70
+        Width = 60
+        Height = 15
+        Caption = 'Modelo: —'
+      end
+      object lblBHdr: TLabel
+        Left = 12
+        Top = 108
+        Width = 220
+        Height = 15
+        Caption = 'Campo objetivo B (marco bobina, µT)'
+      end
+      object lblBX: TLabel
+        Left = 12
+        Top = 140
+        Width = 12
+        Height = 15
+        Caption = 'X'
+      end
+      object edtBX: TEdit
+        Left = 32
+        Top = 136
+        Width = 100
+        Height = 23
+        TabOrder = 3
+        Text = '0'
+      end
+      object lblBY: TLabel
+        Left = 152
+        Top = 140
+        Width = 11
+        Height = 15
+        Caption = 'Y'
+      end
+      object edtBY: TEdit
+        Left = 172
+        Top = 136
+        Width = 100
+        Height = 23
+        TabOrder = 4
+        Text = '0'
+      end
+      object lblBZ: TLabel
+        Left = 292
+        Top = 140
+        Width = 11
+        Height = 15
+        Caption = 'Z'
+      end
+      object edtBZ: TEdit
+        Left = 312
+        Top = 136
+        Width = 100
+        Height = 23
+        TabOrder = 5
+        Text = '0'
+      end
+      object btnCalcField: TButton
+        Left = 12
+        Top = 176
+        Width = 130
+        Height = 30
+        Caption = 'Calcular'
+        TabOrder = 6
+        OnClick = btnCalcFieldClick
+      end
+      object btnSendField: TButton
+        Left = 152
+        Top = 176
+        Width = 150
+        Height = 30
+        Caption = 'Enviar a fuentes'
+        TabOrder = 7
+        OnClick = btnSendFieldClick
+      end
+      object btnFieldOff: TButton
+        Left = 312
+        Top = 176
+        Width = 120
+        Height = 30
+        Caption = 'Salida OFF'
+        TabOrder = 8
+        OnClick = btnFieldOffClick
+      end
+      object mField: TMemo
+        Left = 12
+        Top = 220
+        Width = 520
+        Height = 250
+        Font.Name = 'Courier New'
+        ParentFont = False
+        ReadOnly = True
+        ScrollBars = ssBoth
+        TabOrder = 9
+      end
+    end
+    object tabView: TTabSheet
+      Caption = 'Vista 3D'
+      object pnlViewCtrl: TPanel
+        Left = 0
+        Top = 0
+        Width = 188
+        Height = 492
+        Align = alLeft
+        BevelOuter = bvNone
+        TabOrder = 0
+        object lblViewHdr: TLabel
+          Left = 12
+          Top = 12
+          Width = 120
+          Height = 15
+          Caption = 'Vector B (µT, marco bobina)'
+        end
+        object lblVX: TLabel
+          Left = 12
+          Top = 44
+          Width = 12
+          Height = 15
+          Caption = 'X'
+        end
+        object edtVX: TEdit
+          Left = 36
+          Top = 40
+          Width = 120
+          Height = 23
+          TabOrder = 0
+          Text = '0'
+        end
+        object lblVY: TLabel
+          Left = 12
+          Top = 76
+          Width = 11
+          Height = 15
+          Caption = 'Y'
+        end
+        object edtVY: TEdit
+          Left = 36
+          Top = 72
+          Width = 120
+          Height = 23
+          TabOrder = 1
+          Text = '0'
+        end
+        object lblVZ: TLabel
+          Left = 12
+          Top = 108
+          Width = 11
+          Height = 15
+          Caption = 'Z'
+        end
+        object edtVZ: TEdit
+          Left = 36
+          Top = 104
+          Width = 120
+          Height = 23
+          TabOrder = 2
+          Text = '0'
+        end
+        object btnAplicarVec: TButton
+          Left = 12
+          Top = 140
+          Width = 144
+          Height = 30
+          Caption = 'Mostrar vector'
+          TabOrder = 3
+          OnClick = btnAplicarVecClick
+        end
+        object chkVecSensor: TCheckBox
+          Left = 12
+          Top = 184
+          Width = 170
+          Height = 19
+          Caption = 'Usar magnetómetro en vivo'
+          TabOrder = 4
+          OnClick = chkVecSensorClick
+        end
+        object lblVMod: TLabel
+          Left = 12
+          Top = 220
+          Width = 60
+          Height = 15
+          Caption = '|B| = —'
+        end
+      end
+    end
+  end
+  object Timer1: TTimer
+    Interval = 500
+    OnTimer = Timer1Timer
+    Left = 760
+    Top = 8
+  end
+  object SweepTimer: TTimer
+    Enabled = False
+    Interval = 2000
+    OnTimer = SweepTimerTimer
+    Left = 760
+    Top = 56
+  end
+end

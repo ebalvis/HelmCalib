@@ -10,9 +10,10 @@ magnetómetro de un móvil que emite por UDP con
 modelo afín `B = M·I + b` y, una vez calibrado, calcula las corrientes necesarias
 para generar un campo objetivo.
 
-> Aplicación de laboratorio. Hecha en **Lazarus / Free Pascal** (LCL),
+> Aplicación de laboratorio. Versión principal en **Lazarus / Free Pascal** (LCL),
 > multiplataforma, sin dependencias externas (UI y 3D sobre `Canvas`, red con
-> sockets de la RTL, JSON con `fpjson`).
+> sockets de la RTL, JSON con `fpjson`). Hay también un **port a Delphi (VCL)** en
+> [`delphi/`](delphi/) — ver más abajo.
 
 ## Características
 
@@ -65,6 +66,26 @@ bash tests/run.sh
 `build.sh` genera el recurso de proyecto (`HelmCalib.res`, con manifest para temas/DPI)
 mediante `fpcres` antes de invocar `lazbuild`. También puedes abrir `HelmCalib.lpi`
 directamente en el IDE de Lazarus.
+
+## Port a Delphi (VCL)
+
+En [`delphi/`](delphi/) hay una versión equivalente en **Delphi (VCL, Win64)**,
+probada con **RAD Studio Athens (Delphi 37.0)**. Misma arquitectura y las mismas
+unidades; cambian solo las dependencias de plataforma:
+
+- Red: **Indy 10** (`TIdTCPClient`, `TIdUDPClient`) en vez de los sockets de la RTL.
+- JSON: **System.JSON** en vez de `fpjson`.
+- UI/3D: **VCL** (`Vcl.*`) y `.dfm` en vez de LCL/`.lfm`.
+
+```sh
+cd delphi
+bash build.sh          # GUI -> delphi/HelmCalib.exe (o abre HelmCalib.dproj en el IDE)
+bash tests/run.sh      # 115 asserts de la lógica, exit = nº de fallos
+```
+
+La lógica está cubierta por los mismos tests de consola (115 asserts) y la GUI/3D
+se ha verificado en Win64. La capa de cálculo es idéntica byte a byte en su
+comportamiento a la de Lazarus (verificado con los mismos datos sintéticos).
 
 ## Hardware de referencia
 

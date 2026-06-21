@@ -2,6 +2,17 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased]
+
+### Añadido
+
+- **Port a Delphi (VCL / Win64)** en `delphi/`, probado con RAD Studio Athens
+  (Delphi 37.0). Misma arquitectura y unidades; dependencias de plataforma
+  adaptadas: red con **Indy 10** (`TIdTCPClient`/`TIdUDPClient`), JSON con
+  **System.JSON**, UI/3D en **VCL** con `.dfm`. Lógica verificada con los mismos
+  115 asserts de consola; GUI y vista 3D verificadas en Win64. Scripts `build.sh`
+  y `tests/run.sh`, proyecto `HelmCalib.dproj` para el IDE.
+
 ## [0.1.0] - 2026-06-21
 
 Primera versión funcional en Lazarus/FPC. Las cuatro pestañas operativas y la
