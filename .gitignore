@@ -31,3 +31,6 @@ delphi/Win64/
 delphi/tests/dcu/
 delphi/tests/*.png
 *.rsm
+
+# Notas de sesion (no publicar)
+CONTEXT.md
