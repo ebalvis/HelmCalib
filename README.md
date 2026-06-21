@@ -71,6 +71,15 @@ Four tabs: **Connection · Calibration · Program field · 3D view**.
 | --- | --- |
 | ![Connection tab](docs/screenshot.png) | ![Program field tab](docs/screenshot-field.png) |
 
+### Calibration sweep
+
+The calibration wizard drives a sequence of current combinations (0, ±I per axis,
+and mixes); for each point it lets the field settle and averages K magnetometer
+samples. The animation below shows the swept points: the energized axes light up
+and the resulting B vector points in the corresponding direction.
+
+![Calibration current sweep](docs/calib-sweep.gif)
+
 ## Build & test
 
 Requires **Lazarus / FPC 3.2.2**.
