@@ -10,7 +10,6 @@
       </Flags>
       <SessionStorage Value="InProjectDir"/>
       <Title Value="HelmCalib"/>
-      <UseAppBundle Value="True"/>
       <ResourceType Value="res"/>
     </General>
     <BuildModes>
@@ -39,37 +38,30 @@
         <ComponentName Value="frmMain"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="uMainForm"/>
       </Unit>
       <Unit>
         <Filename Value="src/uMatrix.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uMatrix"/>
       </Unit>
       <Unit>
         <Filename Value="src/uCoils.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uCoils"/>
       </Unit>
       <Unit>
         <Filename Value="src/uSensor.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uSensor"/>
       </Unit>
       <Unit>
         <Filename Value="src/uCalib.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uCalib"/>
       </Unit>
       <Unit>
         <Filename Value="src/uField.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uField"/>
       </Unit>
       <Unit>
         <Filename Value="src/uView3D.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uView3D"/>
       </Unit>
     </Units>
   </ProjectOptions>
@@ -80,6 +72,9 @@
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf3"/>
+      </Debugging>
       <Options>
         <Win32>
           <GraphicApplication Value="True"/>
