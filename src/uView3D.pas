@@ -232,10 +232,13 @@ procedure TView3DPanel.DoRender;
 const
   axisCol: array[0..2] of TColor = (clRed, clLime, clBlue);
   COPPER  = TColor($00295C8C);   // cobre (BBGGRR) para los devanados
-  FRAMECOL = TColor($00777777);  // gris aluminio para la estructura
+  HILITE  = TColor($000AA0FF);   // naranja: eje "activo" al programar campo
+  FRAMECOL = TColor($003C3C3C);  // gris tenue para la estructura de soporte
+  COILW = 6;                     // grosor de las bobinas
 var
   axis: Integer;
-  half, sep: Double;
+  half, sep, maxc: Double;
+  col: TColor;
 begin
   FRot := Mat3Mult(RotX(FPitch), RotY(FYaw));
 
@@ -244,16 +247,26 @@ begin
   FCanvas.FillRect(0, 0, FRW, FRH);
   FCanvas.Brush.Style := bsClear;
 
-  // estructura cúbica de soporte (aluminio), algo mayor que las bobinas
+  // estructura cúbica de soporte (aluminio), tenue
   DrawCube(0.62, FRAMECOL);
 
-  // 3 pares de bobinas CUADRADAS (Helmholtz) tipo BHC2000, en cobre
+  // eje(s) "activo(s)": los que más contribuyen al campo objetivo
+  maxc := 0;
+  if FHasTarget then
+    for axis := 0 to 2 do
+      if Abs(FTarget[axis]) > maxc then maxc := Abs(FTarget[axis]);
+
+  // 3 pares de bobinas CUADRADAS (Helmholtz) tipo BHC2000
   for axis := 0 to 2 do
   begin
     half := (DIAM[axis] / 2) / MAXDIAM * 0.92;   // tamaño a escala del eje
     sep := half * 0.55;                          // separación del par
-    DrawSquareCoil(axis, half, -sep, COPPER, 4);
-    DrawSquareCoil(axis, half,  sep, COPPER, 4);
+    if FHasTarget and (maxc > 1e-9) and (Abs(FTarget[axis]) >= 0.4 * maxc) then
+      col := HILITE
+    else
+      col := COPPER;
+    DrawSquareCoil(axis, half, -sep, col, COILW);
+    DrawSquareCoil(axis, half,  sep, col, COILW);
   end;
 
   // ejes del marco bobina (cortos, para orientación)

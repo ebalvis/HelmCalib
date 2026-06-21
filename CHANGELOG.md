@@ -7,8 +7,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 ### Cambiado
 
 - **Vista 3D** (`uView3D`, ambas versiones): ahora dibuja **bobinas cuadradas** de
-  cobre (2 por eje) dentro de una **estructura cúbica de soporte** de aluminio, para
-  parecerse al hardware real (Bartington BHC2000), en vez de los anillos circulares.
+  cobre (gruesas, 2 por eje) dentro de una **estructura cúbica de soporte** de
+  aluminio (gris tenue), para parecerse al hardware real (Bartington BHC2000), en
+  vez de los anillos circulares. Al programar campo, las bobinas de los ejes que
+  dominan el vector objetivo se **resaltan en naranja**.
 
 ### Añadido
 
