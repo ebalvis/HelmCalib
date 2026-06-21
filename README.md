@@ -1,104 +1,113 @@
 # HelmCalib
 
-Calibración de campo magnético y **programación en lazo abierto** para bobinas de
-Helmholtz de 3 ejes (Bartington **BHC2000**), con vista 3D del vector generado.
+Magnetic-field **calibration** and **open-loop field programming** for a 3-axis
+Helmholtz coil system (Bartington **BHC2000**), with a built-in 3D view of the
+generated field vector.
 
-La app manda corrientes a las 3 bobinas a través de
-[HelmMagControl](../HelmMagControl) (TCP) y mide el campo resultante con el
-magnetómetro de un móvil que emite por UDP con
-[SensorCast](https://github.com/ebalvis/SensorCast). Con esos datos ajusta el
-modelo afín `B = M·I + b` y, una vez calibrado, calcula las corrientes necesarias
-para generar un campo objetivo.
+![3D view of the coil system and the field vector](docs/view3d.png)
 
-> Aplicación de laboratorio. Versión principal en **Lazarus / Free Pascal** (LCL),
-> multiplataforma, sin dependencias externas (UI y 3D sobre `Canvas`, red con
-> sockets de la RTL, JSON con `fpjson`). Hay también un **port a Delphi (VCL)** en
-> [`delphi/`](delphi/) — ver más abajo.
+The app drives the three coil axes through
+[HelmMagControl](https://github.com/ebalvis) (TCP) and measures the resulting
+field with the magnetometer of a phone running
+[SensorCast](https://github.com/ebalvis/SensorCast) (UDP). From those samples it
+fits the affine model `B = M·I + b` and, once calibrated, computes the currents
+needed to generate a requested target field.
 
-## Características
+> Lab tool. Primary version in **Lazarus / Free Pascal** (LCL), cross-platform,
+> with no external dependencies (UI and 3D drawn on `Canvas`, networking on the
+> RTL sockets, JSON via `fpjson`). A **Delphi (VCL)** port lives in
+> [`delphi/`](delphi/) — see below.
 
-- **Conexión** en vivo: cliente TCP de HelmMagControl (lecturas `READ ALL`) y
-  cliente UDP de SensorCast (magnetómetro + media de K muestras).
-- **Calibración** por asistente: barrido automático de corrientes → asentamiento →
-  promedio de K muestras → ajuste por mínimos cuadrados. Captura manual de puntos,
-  residuo RMS y guardado/carga de perfil (JSON).
-- **Programar campo** en lazo abierto: dado un vector B objetivo (marco bobina),
-  calcula las corrientes con *clamp* a los límites y avisa de saturación; muestra
-  el campo realmente logrado. Modelo nominal de catálogo si aún no se ha calibrado.
-- **Vista 3D**: wireframe de los 3 pares de bobinas a escala + flecha del vector B,
-  rotable con el ratón y zoom con la rueda, dibujado sobre `Canvas` sin librerías 3D.
+## Features
 
-## Modelo matemático
+- **Connection** (live): TCP client for HelmMagControl (`READ ALL` polling) and
+  UDP client for SensorCast (magnetometer + K-sample averaging).
+- **Calibration wizard**: automatic current sweep → settle → average K samples →
+  least-squares fit. Manual point capture, RMS residual, and profile save/load (JSON).
+- **Open-loop field programming**: given a target B vector (coil frame), it computes
+  the currents with per-axis clamping, warns on saturation, and shows the actually
+  achievable field. A nominal catalog model is available before calibrating.
+- **3D view**: wireframe of the support cube and the three square Helmholtz coil
+  pairs to scale, plus the B-vector arrow. Rotate with the mouse, zoom with the
+  wheel, drawn on `Canvas` with no 3D libraries. Coils on the dominant axis of the
+  target field are highlighted.
 
-Marco del sensor: `B = M·I + b`, con `M` 3×3 (µT/A) y `b` 3×1 (µT, campo ambiente).
+## Calibration math
 
-- **Ajuste** (mínimos cuadrados, ecuaciones normales):
-  `A = [M|b] = (Σ Bₖ·xₖᵀ)·(Σ xₖ·xₖᵀ)⁻¹`, con `xₖ = [Iₖ; 1]`. Requiere ≥ 4 puntos
-  no coplanares (incluido I = 0).
-- **Descomposición polar** `M = R·G` (Jacobi sobre `MᵀM`): `R` rotación bobina→sensor,
-  `G` ganancia simétrica ≈ diag(kₓ, k_y, k_z).
-- **Lazo abierto**: `I = G⁻¹·(B_objetivo − Rᵀ·b)`, con *clamp* a ±I_max por eje.
+Sensor frame: `B = M·I + b`, with `M` 3×3 (µT/A) and `b` 3×1 (µT, ambient field).
 
-## Arquitectura
+- **Fit** (least squares, normal equations):
+  `A = [M|b] = (Σ Bₖ·xₖᵀ)·(Σ xₖ·xₖᵀ)⁻¹`, with `xₖ = [Iₖ; 1]`. Needs ≥ 4 non-coplanar
+  points (including I = 0).
+- **Polar decomposition** `M = R·G` (Jacobi on `MᵀM`): `R` coil→sensor rotation,
+  `G` symmetric gain ≈ diag(kₓ, k_y, k_z).
+- **Open loop**: `I = G⁻¹·(B_target − Rᵀ·b)`, then clamp to ±I_max per axis.
 
-| Unit | Responsabilidad |
+## Architecture
+
+| Unit | Responsibility |
 | --- | --- |
-| `uMatrix` | Álgebra 3×3/4×4: inversas, mínimos cuadrados, Jacobi, descomposición polar/SVD. |
-| `uCoils`  | Cliente TCP del protocolo de texto de HelmMagControl (lógica de protocolo pura + `TCoilClient`). |
-| `uSensor` | Cliente UDP de SensorCast (`ParseSensorJSON` puro + `TSensorClient` en hilo). |
-| `uCalib`  | Modelo `B=M·I+b`: puntos, ajuste, polar, residuo RMS, perfil JSON, modelo nominal/manual. |
-| `uField`  | Programación de campo en lazo abierto: inversa + *clamp* + campo logrado + envío. |
-| `uView3D` | `TView3DPanel`: vista 3D wireframe sobre `Canvas`. |
-| `uMainForm` | Formulario principal con las 4 pestañas. |
+| `uMatrix` | 3×3/4×4 linear algebra: inverses, least squares, Jacobi, polar/SVD. |
+| `uCoils`  | TCP client for the HelmMagControl text protocol (pure protocol logic + `TCoilClient`). |
+| `uSensor` | UDP client for SensorCast (pure `ParseSensorJSON` + threaded `TSensorClient`). |
+| `uCalib`  | `B=M·I+b` model: points, fit, polar decomposition, RMS residual, JSON profile, nominal/manual model. |
+| `uField`  | Open-loop field programming: inverse + clamp + achieved field + send. |
+| `uView3D` | `TView3DPanel`: wireframe 3D view drawn on `Canvas`. |
+| `uMainForm` | Main form with the four tabs. |
 
-## Compilar y probar
+## Application
 
-Requiere **Lazarus / FPC 3.2.2** (en esta máquina, `C:\lazarus`).
+![HelmCalib — connection tab](docs/screenshot.png)
+
+Four tabs: **Connection · Calibration · Program field · 3D view**.
+
+## Build & test
+
+Requires **Lazarus / FPC 3.2.2**.
 
 ```sh
-# Aplicación GUI -> lib/x86_64-win64/HelmCalib.exe
+# GUI app -> lib/x86_64-win64/HelmCalib.exe
 bash build.sh
 
-# Tests de consola de la lógica (105+ asserts, exit = nº de fallos)
+# Console tests for the logic (105+ assertions, exit = number of failures)
 bash tests/run.sh
 ```
 
-`build.sh` genera el recurso de proyecto (`HelmCalib.res`, con manifest para temas/DPI)
-mediante `fpcres` antes de invocar `lazbuild`. También puedes abrir `HelmCalib.lpi`
-directamente en el IDE de Lazarus.
+`build.sh` generates the project resource (`HelmCalib.res`, with a manifest for
+themes/DPI) via `fpcres` before invoking `lazbuild`. You can also open
+`HelmCalib.lpi` directly in the Lazarus IDE.
 
-## Port a Delphi (VCL)
+## Delphi (VCL) port
 
-En [`delphi/`](delphi/) hay una versión equivalente en **Delphi (VCL, Win64)**,
-probada con **RAD Studio Athens (Delphi 37.0)**. Misma arquitectura y las mismas
-unidades; cambian solo las dependencias de plataforma:
+[`delphi/`](delphi/) contains an equivalent **Delphi (VCL, Win64)** version, tested
+with **RAD Studio Athens (Delphi 37.0)**. Same architecture and the same units;
+only the platform dependencies differ:
 
-- Red: **Indy 10** (`TIdTCPClient`, `TIdUDPClient`) en vez de los sockets de la RTL.
-- JSON: **System.JSON** en vez de `fpjson`.
-- UI/3D: **VCL** (`Vcl.*`) y `.dfm` en vez de LCL/`.lfm`.
+- Networking: **Indy 10** (`TIdTCPClient`, `TIdUDPClient`) instead of the RTL sockets.
+- JSON: **System.JSON** instead of `fpjson`.
+- UI/3D: **VCL** (`Vcl.*`) with `.dfm` instead of LCL/`.lfm`.
 
 ```sh
 cd delphi
-bash build.sh          # GUI -> delphi/HelmCalib.exe (o abre HelmCalib.dproj en el IDE)
-bash tests/run.sh      # 115 asserts de la lógica, exit = nº de fallos
+bash build.sh          # GUI -> delphi/HelmCalib.exe (or open HelmCalib.dproj in the IDE)
+bash tests/run.sh      # 115 logic assertions, exit = number of failures
 ```
 
-La lógica está cubierta por los mismos tests de consola (115 asserts) y la GUI/3D
-se ha verificado en Win64. La capa de cálculo es idéntica byte a byte en su
-comportamiento a la de Lazarus (verificado con los mismos datos sintéticos).
+The logic is covered by the same console tests (115 assertions); the GUI and 3D
+view were verified on Win64.
 
-## Hardware de referencia
+## Reference hardware
 
-- **Bobinas:** Bartington BHC2000 (3 pares ortogonales). Modelo A: ~25 µT/A, 1.0 mT/eje,
-  40 A. Modelo B: ~15 µT/A, 240 µT/eje, 16 A.
-- **Actuador:** fuentes Wanptek vía HelmMagControl, protocolo TCP de texto (puerto 4444).
-- **Sensor:** móvil Android con SensorCast en el centro de las bobinas (UDP, JSON cada 200 ms).
+- **Coils:** Bartington BHC2000 (3 orthogonal pairs). Model A: ~25 µT/A, 1.0 mT/axis,
+  40 A. Model B: ~15 µT/A, 240 µT/axis, 16 A.
+- **Actuator:** Wanptek power supplies via HelmMagControl, TCP text protocol (port 4444).
+- **Sensor:** Android phone running SensorCast at the center of the coils (UDP, JSON every 200 ms).
 
-## Estado
+## Status
 
-Las cuatro pestañas (Conexión · Calibración · Programar campo · Vista 3D) están
-operativas. La lógica está cubierta por tests de consola con datos sintéticos. El
-I/O de red compila y se ha verificado la lógica de protocolo/parseo; la prueba de
-extremo a extremo con el hardware real queda para la puesta en marcha.
+All four tabs (Connection · Calibration · Program field · 3D view) are operational.
+The logic is covered by console tests with synthetic data; the network I/O compiles
+and the protocol/parsing logic is verified — end-to-end testing against the real
+hardware is left for commissioning.
 
-Ver [CHANGELOG.md](CHANGELOG.md) para el detalle por versión.
+See [CHANGELOG.md](CHANGELOG.md) for the per-version detail.

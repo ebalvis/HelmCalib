@@ -22,7 +22,7 @@ begin
   bmp := TBitmap.Create;
   png := TPngImage.Create;
   try
-    bmp.SetSize(640, 480);
+    bmp.SetSize(860, 660);
     bmp.PixelFormat := pf24bit;
     view.SetTarget(Vec3(40, 20, 60));      // vector B de ejemplo (µT)
     view.RenderTo(bmp.Canvas, bmp.Width, bmp.Height);

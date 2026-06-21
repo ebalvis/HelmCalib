@@ -1,57 +1,57 @@
 # Changelog
 
-Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Cambiado
+### Changed
 
-- **Vista 3D** (`uView3D`, ambas versiones): ahora dibuja **bobinas cuadradas** de
-  cobre (gruesas, 2 por eje) dentro de una **estructura cúbica de soporte** de
-  aluminio (gris tenue), para parecerse al hardware real (Bartington BHC2000), en
-  vez de los anillos circulares. Al programar campo, las bobinas de los ejes que
-  dominan el vector objetivo se **resaltan en naranja**.
+- **3D view** (`uView3D`, both versions): now draws **square coils** (thick, copper,
+  2 per axis) inside a **cubic support structure** (faint gray aluminium) to resemble
+  the real hardware (Bartington BHC2000), instead of circular rings. When programming
+  a field, the coils of the axes that dominate the target vector are **highlighted in
+  orange**.
 
-### Añadido
+### Added
 
-- **Port a Delphi (VCL / Win64)** en `delphi/`, probado con RAD Studio Athens
-  (Delphi 37.0). Misma arquitectura y unidades; dependencias de plataforma
-  adaptadas: red con **Indy 10** (`TIdTCPClient`/`TIdUDPClient`), JSON con
-  **System.JSON**, UI/3D en **VCL** con `.dfm`. Lógica verificada con los mismos
-  115 asserts de consola; GUI y vista 3D verificadas en Win64. Scripts `build.sh`
-  y `tests/run.sh`, proyecto `HelmCalib.dproj` para el IDE.
+- **Delphi (VCL / Win64) port** in `delphi/`, tested with RAD Studio Athens
+  (Delphi 37.0). Same architecture and units; platform dependencies adapted:
+  networking with **Indy 10** (`TIdTCPClient`/`TIdUDPClient`), JSON with
+  **System.JSON**, UI/3D in **VCL** with `.dfm`. Logic verified with the same
+  115 console assertions; GUI and 3D view verified on Win64. `build.sh` and
+  `tests/run.sh` scripts, and a `HelmCalib.dproj` project for the IDE.
 
 ## [0.1.0] - 2026-06-21
 
-Primera versión funcional en Lazarus/FPC. Las cuatro pestañas operativas y la
-lógica cubierta por tests de consola con datos sintéticos.
+First working version in Lazarus/FPC. All four tabs operational and the logic
+covered by console tests with synthetic data.
 
-### Añadido
+### Added
 
-- **`uMatrix`** — álgebra 3×3/4×4 sin dependencias: vectores, inversa 3×3
-  (cofactores) y 4×4 (Gauss-Jordan con pivoteo), mínimos cuadrados afín
-  (`SolveAffine`), eigendescomposición simétrica (`JacobiEig3`), descomposición
-  polar (`PolarDecomp`) y SVD. 25 tests.
-- **`uCoils`** — cliente TCP del protocolo de HelmMagControl: lógica de protocolo
-  pura (formato de comandos, parseo de `OK`/`ERROR`, `GET`, `READ ALL`) y
-  `TCoilClient` sobre sockets (conexión persistente, CRLF/LF, timeout). 21 tests.
-- **`uSensor`** — cliente UDP de SensorCast: `ParseSensorJSON` (magnetómetro
-  obligatorio, acelerómetro opcional) y `TSensorClient` en hilo (envía `HOLA`,
-  última muestra + media de K, mutex). 14 tests.
-- **`uCalib`** — modelo `B=M·I+b`: acumulación de puntos, ajuste, descomposición
-  polar, residuo RMS, perfil JSON (guardar/cargar) y modelo nominal/manual. 38 tests.
-- **`uField`** — programación de campo en lazo abierto: inversa `I=G⁻¹·(B−Rᵀ·b)`,
-  *clamp* por eje con avisos de saturación, campo logrado y envío a las fuentes. 17 tests.
-- **`uView3D`** — `TView3DPanel`: vista 3D wireframe de las bobinas + flecha del
-  vector B sobre `Canvas`, rotación con ratón y zoom; render offline a PNG.
-- **GUI** (`uMainForm`, proyecto Lazarus): pestañas Conexión, Calibración,
-  Programar campo y Vista 3D.
-  - Conexión: TCP a HelmMagControl (Ping, `READ ALL` en vivo) y UDP a SensorCast.
-  - Calibración: asistente de barrido automático, captura manual, lista de puntos,
-    ajuste y guardado de perfil.
-  - Programar campo: objetivo B → corrientes/clamp/campo logrado, envío a fuentes.
-  - Vista 3D del vector objetivo.
-- **Build/tests**: `build.sh` (genera `.res` con manifest y compila con `lazbuild`)
-  y `tests/run.sh` (compila y ejecuta los programas de test de consola).
+- **`uMatrix`** — dependency-free 3×3/4×4 linear algebra: vectors, 3×3 inverse
+  (cofactors) and 4×4 inverse (Gauss-Jordan with pivoting), affine least squares
+  (`SolveAffine`), symmetric eigendecomposition (`JacobiEig3`), polar decomposition
+  (`PolarDecomp`) and SVD. 25 tests.
+- **`uCoils`** — TCP client for the HelmMagControl protocol: pure protocol logic
+  (command formatting, `OK`/`ERROR` parsing, `GET`, `READ ALL`) and a socket-based
+  `TCoilClient` (persistent connection, CRLF/LF, timeout). 21 tests.
+- **`uSensor`** — UDP client for SensorCast: `ParseSensorJSON` (magnetometer
+  required, accelerometer optional) and a threaded `TSensorClient` (sends `HOLA`,
+  keeps the latest sample + K-average, mutex). 14 tests.
+- **`uCalib`** — `B=M·I+b` model: point accumulation, fit, polar decomposition,
+  RMS residual, JSON profile (save/load), and nominal/manual model. 38 tests.
+- **`uField`** — open-loop field programming: inverse `I=G⁻¹·(B−Rᵀ·b)`, per-axis
+  clamping with saturation warnings, achieved field, and sending to the supplies. 17 tests.
+- **`uView3D`** — `TView3DPanel`: wireframe 3D view of the coils + B-vector arrow
+  on `Canvas`, mouse rotation and zoom; offline PNG rendering.
+- **GUI** (`uMainForm`, Lazarus project): Connection, Calibration, Program field,
+  and 3D view tabs.
+  - Connection: TCP to HelmMagControl (Ping, live `READ ALL`) and UDP to SensorCast.
+  - Calibration: automatic sweep wizard, manual capture, point list, fit, and profile save.
+  - Program field: target B → currents/clamp/achieved field, send to supplies.
+  - 3D view of the target vector.
+- **Build/tests**: `build.sh` (generates the `.res` with a manifest and compiles with
+  `lazbuild`) and `tests/run.sh` (compiles and runs the console test programs).
 
+[Unreleased]: https://github.com/ebalvis/HelmCalib/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/ebalvis/HelmCalib/releases/tag/v0.1.0
