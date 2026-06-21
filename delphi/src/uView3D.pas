@@ -46,6 +46,8 @@ type
     constructor Create(AOwner: TComponent); override;
     { Dibuja la escena en un Canvas arbitrario (control o bitmap offline). }
     procedure RenderTo(ACanvas: TCanvas; AWidth, AHeight: Integer);
+    { Fija la orientación/zoom de la cámara (rad). Útil para render por lotes. }
+    procedure SetView(yaw, pitch, zoom: Double);
     procedure SetTarget(const v: TVec3);
     procedure ClearTarget;
     procedure SetMeasured(const v: TVec3);
@@ -298,6 +300,14 @@ begin
   FRW := AWidth;
   FRH := AHeight;
   DoRender;
+end;
+
+procedure TView3DPanel.SetView(yaw, pitch, zoom: Double);
+begin
+  FYaw := yaw;
+  FPitch := pitch;
+  FZoom := zoom;
+  Invalidate;
 end;
 
 procedure TView3DPanel.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);

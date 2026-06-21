@@ -14,6 +14,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **MIT license** (`LICENSE`) and an animated 3D preview + per-tab screenshots in the README.
 - **Delphi (VCL / Win64) port** in `delphi/`, tested with RAD Studio Athens
   (Delphi 37.0). Same architecture and units; platform dependencies adapted:
   networking with **Indy 10** (`TIdTCPClient`/`TIdUDPClient`), JSON with

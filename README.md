@@ -1,10 +1,18 @@
 # HelmCalib
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)
+![Lazarus / FPC](https://img.shields.io/badge/Lazarus%20%2F%20FPC-3.2.2-7A4C9C)
+![Delphi VCL](https://img.shields.io/badge/Delphi-VCL%20Win64-E62431)
+
 Magnetic-field **calibration** and **open-loop field programming** for a 3-axis
 Helmholtz coil system (Bartington **BHC2000**), with a built-in 3D view of the
 generated field vector.
 
-![3D view of the coil system and the field vector](docs/view3d.png)
+![3D view of the coil system and the field vector](docs/view3d.gif)
+
+*The 3D view: square copper coils on a cubic aluminium frame; coils on the axes
+that dominate the target field are highlighted in orange. Rotatable with the mouse.*
 
 The app drives the three coil axes through
 [HelmMagControl](https://github.com/ebalvis) (TCP) and measures the resulting
@@ -57,9 +65,11 @@ Sensor frame: `B = M·I + b`, with `M` 3×3 (µT/A) and `b` 3×1 (µT, ambient f
 
 ## Application
 
-![HelmCalib — connection tab](docs/screenshot.png)
-
 Four tabs: **Connection · Calibration · Program field · 3D view**.
+
+| Connection | Program field |
+| --- | --- |
+| ![Connection tab](docs/screenshot.png) | ![Program field tab](docs/screenshot-field.png) |
 
 ## Build & test
 
@@ -111,3 +121,7 @@ and the protocol/parsing logic is verified — end-to-end testing against the re
 hardware is left for commissioning.
 
 See [CHANGELOG.md](CHANGELOG.md) for the per-version detail.
+
+## License
+
+Released under the [MIT License](LICENSE).
