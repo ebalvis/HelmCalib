@@ -14,6 +14,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Remote control interface** (`uRemote`, both versions): a TCP text server (same
+  style as HelmMagControl, default port 4445, UTF-8) that exposes connection,
+  sensor reading, model management, field programming and calibration over the
+  wire. Commands run on the main thread (`Synchronize`) so they don't race with the
+  GUI. Toggle it from the *Connection* tab or auto-start with `-remote`. Delphi uses
+  Indy `TIdTCPServer`; Lazarus uses `ssockets`. The companion Python library
+  [python-client-for-helmholtz-rig](https://github.com/ebalvis/python-client-for-helmholtz-rig)
+  gains a `HelmCalibClient`; verified end-to-end (calibration + field programming
+  driven from Python against both builds).
 - **MIT license** (`LICENSE`) and README media: animated previews of the 3D view,
   the calibration sweep, and field programming (computed currents), plus per-tab
   screenshots.

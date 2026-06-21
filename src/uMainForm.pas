@@ -11,7 +11,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ComCtrls,
-  ExtCtrls, uMatrix, uCoils, uSensor, uCalib, uField, uView3D;
+  ExtCtrls, uMatrix, uCoils, uSensor, uCalib, uField, uView3D, uRemote;
 
 type
 
@@ -98,6 +98,12 @@ type
     btnAplicarVec: TButton;
     chkVecSensor: TCheckBox;
     lblVMod: TLabel;
+    // --- Servidor remoto ---
+    gbRemote: TGroupBox;
+    lblRemotePort: TLabel;
+    edtRemotePort: TEdit;
+    chkRemote: TCheckBox;
+    lblRemoteStatus: TLabel;
 
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -119,6 +125,7 @@ type
     procedure btnFitClick(Sender: TObject);
     procedure btnSaveProfileClick(Sender: TObject);
     procedure SweepTimerTimer(Sender: TObject);
+    procedure chkRemoteClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     FCoils: TCoilClient;
@@ -127,9 +134,13 @@ type
     FCalib: TCalibration;
     FLastSol: TFieldSolution;
     FHasSol: Boolean;
+    FRemote: TRemoteServer;
     FSweep: array of TVec3;
     FSweepIdx: Integer;
     FSweeping: Boolean;
+    function ProcessRemoteCommand(const Cmd: string): string;
+    procedure StartSensor(const ip: string; tx, rx: Integer);
+    procedure StopSensor;
     procedure UpdateCoilsUI;
     procedure UpdateSensorUI;
     procedure RefreshCoils;
@@ -163,9 +174,31 @@ begin
   Result := StrToFloatDef(StringReplace(Trim(s), ',', '.', []), def, fs);
 end;
 
+{ Trocea por espacios, ignorando vacíos (sustituto de string.Split). }
+function SplitWS(const s: string): TStringArray;
+var sl: TStringList; i: Integer;
+begin
+  Result := nil;
+  sl := TStringList.Create;
+  try
+    sl.Delimiter := ' ';
+    sl.StrictDelimiter := True;
+    sl.DelimitedText := s;
+    for i := 0 to sl.Count - 1 do
+      if Trim(sl[i]) <> '' then
+      begin
+        SetLength(Result, Length(Result) + 1);
+        Result[High(Result)] := Trim(sl[i]);
+      end;
+  finally
+    sl.Free;
+  end;
+end;
+
 { TfrmMain }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+var i: Integer;
 begin
   FCoils := TCoilClient.Create(2000);
   FSensor := nil;
@@ -178,26 +211,81 @@ begin
   FCalib.SetNominalModel;   // usable de inmediato con ganancias de catálogo
   FHasSol := False;
 
+  FRemote := TRemoteServer.Create;
+  FRemote.OnCommand := @ProcessRemoteCommand;
+
+  // controles del servidor remoto (creados en código, al pie de la pestaña Conexión)
+  gbRemote := TGroupBox.Create(Self);
+  gbRemote.Parent := tabConn;
+  gbRemote.SetBounds(8, 428, 816, 56);
+  gbRemote.Caption := ' Control remoto (TCP — texto, igual estilo que HelmMagControl) ';
+  lblRemotePort := TLabel.Create(Self);
+  lblRemotePort.Parent := gbRemote;
+  lblRemotePort.SetBounds(16, 24, 44, 15);
+  lblRemotePort.Caption := 'Puerto:';
+  edtRemotePort := TEdit.Create(Self);
+  edtRemotePort.Parent := gbRemote;
+  edtRemotePort.SetBounds(66, 20, 70, 23);
+  edtRemotePort.Text := '4445';
+  chkRemote := TCheckBox.Create(Self);
+  chkRemote.Parent := gbRemote;
+  chkRemote.SetBounds(160, 22, 200, 19);
+  chkRemote.Caption := 'Activar servidor remoto';
+  chkRemote.OnClick := @chkRemoteClick;
+  lblRemoteStatus := TLabel.Create(Self);
+  lblRemoteStatus.Parent := gbRemote;
+  lblRemoteStatus.SetBounds(380, 24, 60, 15);
+  lblRemoteStatus.Caption := 'Parado';
+  lblRemoteStatus.Font.Color := clRed;
+
   PageControl1.ActivePage := tabConn;
   UpdateCoilsUI;
   UpdateSensorUI;
   UpdateModelStatus;
   RefreshPointList;
+
+  // arranque automático del servidor remoto con -remote
+  for i := 1 to ParamCount do
+    if SameText(ParamStr(i), '-remote') then
+    begin
+      chkRemote.OnClick := nil;          // evita el doble disparo de OnClick en LCL
+      chkRemote.Checked := True;
+      chkRemote.OnClick := @chkRemoteClick;
+      chkRemoteClick(nil);               // arranca una sola vez
+      Break;
+    end;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   Timer1.Enabled := False;
   SweepTimer.Enabled := False;
+  if Assigned(FRemote) then
+  begin
+    FRemote.Stop;
+    FreeAndNil(FRemote);
+  end;
   if Assigned(FCoils) and FCoils.Connected then FCoils.AllOff;
+  StopSensor;
+  FreeAndNil(FCoils);
+  FreeAndNil(FCalib);
+end;
+
+procedure TfrmMain.StartSensor(const ip: string; tx, rx: Integer);
+begin
+  StopSensor;
+  FSensor := TSensorClient.Create(ip, tx, rx);
+  FSensor.StartClient;
+end;
+
+procedure TfrmMain.StopSensor;
+begin
   if Assigned(FSensor) then
   begin
     FSensor.Terminate;
     FSensor.WaitFor;
     FreeAndNil(FSensor);
   end;
-  FreeAndNil(FCoils);
-  FreeAndNil(FCalib);
 end;
 
 procedure TfrmMain.UpdateCoilsUI;
@@ -269,9 +357,7 @@ var tx, rx: Integer;
 begin
   if Assigned(FSensor) then
   begin
-    FSensor.Terminate;
-    FSensor.WaitFor;
-    FreeAndNil(FSensor);
+    StopSensor;
     UpdateSensorUI;
     Exit;
   end;
@@ -282,8 +368,7 @@ begin
   end;
   tx := StrToIntDef(Trim(edtTx.Text), 51042);
   rx := StrToIntDef(Trim(edtRx.Text), 51043);
-  FSensor := TSensorClient.Create(Trim(edtIP.Text), tx, rx);
-  FSensor.StartClient;
+  StartSensor(Trim(edtIP.Text), tx, rx);
   UpdateSensorUI;
 end;
 
@@ -744,6 +829,238 @@ begin
   finally
     dlg.Free;
   end;
+end;
+
+{ ---- Servidor remoto ---- }
+
+procedure TfrmMain.chkRemoteClick(Sender: TObject);
+var port: Integer;
+begin
+  if chkRemote.Checked then
+  begin
+    port := StrToIntDef(Trim(edtRemotePort.Text), 4445);
+    FRemote.Start(port);
+    lblRemoteStatus.Caption := Format('Escuchando en :%d', [port]);
+    lblRemoteStatus.Font.Color := clGreen;
+    edtRemotePort.Enabled := False;
+  end
+  else
+  begin
+    FRemote.Stop;
+    lblRemoteStatus.Caption := 'Parado';
+    lblRemoteStatus.Font.Color := clRed;
+    edtRemotePort.Enabled := True;
+  end;
+end;
+
+function TfrmMain.ProcessRemoteCommand(const Cmd: string): string;
+var
+  inv: TFormatSettings;
+  t: TStringArray;
+  up, verb, rest: string;
+  sol: TFieldSolution;
+  data: TCoilReadAll;
+  smp: TSensorSample;
+  v, b: TVec3;
+  ctrl: TFieldController;
+  age, k, port, ch: Integer;
+  mk: TCoilModelKind;
+
+  function FF(const d: Double): string;
+  begin
+    Result := FloatToStrF(d, ffGeneral, 7, 0, inv);
+  end;
+
+  function V3(const w: TVec3): string;
+  begin
+    Result := FF(w[0]) + ' ' + FF(w[1]) + ' ' + FF(w[2]);
+  end;
+
+  function OnOff(bb: Boolean): string;
+  begin
+    if bb then Result := 'on' else Result := 'off';
+  end;
+
+  function ArgF(i: Integer): Double;
+  begin
+    Result := ParseFloatDot(t[i]);
+  end;
+
+begin
+  inv := DefaultFormatSettings;
+  inv.DecimalSeparator := '.';
+  if Cmd = '' then Exit('ERROR Empty');
+  t := SplitWS(Cmd);
+  if Length(t) = 0 then Exit('ERROR Empty');
+  up := UpperCase(Cmd);
+  verb := UpperCase(t[0]);
+
+  if verb = 'PING' then Exit('OK PONG HelmCalib 0.1');
+
+  if verb = 'HELP' then
+    Exit('OK PING|STATUS|CONNECT COILS h p|CONNECT SENSOR ip [tx rx]|DISCONNECT COILS|'
+      + 'SENSOR|GET MAG|GET MAGAVG k|READALL|MODEL NOMINAL A|B|LOAD PROFILE path|'
+      + 'SAVE PROFILE path|GET MODEL|SOLVE bx by bz|SETFIELD bx by bz|'
+      + 'SETCURRENTS i1 i2 i3|FIELDOFF|CALIB CLEAR|CALIB ADD ix iy iz bx by bz|'
+      + 'CALIB COUNT|CALIB FIT');
+
+  if verb = 'STATUS' then
+  begin
+    if FCalib.Fitted then
+      verb := 'ready(' + CoilModelKindToStr(FCalib.Model.Kind) + ')'
+    else
+      verb := 'none';
+    Exit(Format('OK COILS %s SENSOR %s MODEL %s RMS %s',
+      [OnOff(FCoils.Connected), OnOff(Assigned(FSensor)), verb, FF(FCalib.ResidualRMS)]));
+  end;
+
+  if (verb = 'CONNECT') and (Length(t) >= 2) then
+  begin
+    if SameText(t[1], 'COILS') then
+    begin
+      if Length(t) < 4 then Exit('ERROR Usage: CONNECT COILS host port');
+      port := StrToIntDef(t[3], 4444);
+      if FCoils.Connect(t[2], port) then
+      begin UpdateCoilsUI; Exit('OK COILS connected'); end
+      else Exit('ERROR ConnectFailed');
+    end;
+    if SameText(t[1], 'SENSOR') then
+    begin
+      if Length(t) < 3 then Exit('ERROR Usage: CONNECT SENSOR ip [tx] [rx]');
+      if Length(t) >= 5 then
+        StartSensor(t[2], StrToIntDef(t[3], 51042), StrToIntDef(t[4], 51043))
+      else if Length(t) >= 4 then
+        StartSensor(t[2], StrToIntDef(t[3], 51042), 51043)
+      else
+        StartSensor(t[2], 51042, 51043);
+      UpdateSensorUI;
+      Exit('OK SENSOR listening');
+    end;
+    Exit('ERROR Usage: CONNECT COILS|SENSOR ...');
+  end;
+
+  if (verb = 'DISCONNECT') and (Length(t) >= 2) then
+  begin
+    if SameText(t[1], 'COILS') then begin FCoils.Disconnect; UpdateCoilsUI; Exit('OK'); end;
+    if SameText(t[1], 'SENSOR') then begin StopSensor; UpdateSensorUI; Exit('OK'); end;
+    Exit('ERROR Usage: DISCONNECT COILS|SENSOR');
+  end;
+
+  if (verb = 'GET') and (Length(t) >= 2) and SameText(t[1], 'MAG') then
+  begin
+    if not Assigned(FSensor) then Exit('ERROR NoSensor');
+    if not FSensor.GetLatest(smp, age) then Exit('ERROR NoSample');
+    Exit('OK MAG ' + V3(smp.Mag));
+  end;
+  if (verb = 'GET') and (Length(t) >= 3) and SameText(t[1], 'MAGAVG') then
+  begin
+    if not Assigned(FSensor) then Exit('ERROR NoSensor');
+    k := StrToIntDef(t[2], 10);
+    if not FSensor.GetAveragedMag(k, v) then Exit('ERROR NoSample');
+    Exit('OK MAGAVG ' + V3(v));
+  end;
+  if (verb = 'GET') and (Length(t) >= 2) and SameText(t[1], 'MODEL') then
+    Exit(Format('OK M %s %s %s %s %s %s %s %s %s B %s RMS %s FITTED %d',
+      [FF(FCalib.M[0,0]), FF(FCalib.M[0,1]), FF(FCalib.M[0,2]),
+       FF(FCalib.M[1,0]), FF(FCalib.M[1,1]), FF(FCalib.M[1,2]),
+       FF(FCalib.M[2,0]), FF(FCalib.M[2,1]), FF(FCalib.M[2,2]),
+       V3(FCalib.b), FF(FCalib.ResidualRMS), Ord(FCalib.Fitted)]));
+
+  if verb = 'READALL' then
+  begin
+    if not FCoils.Connected then Exit('ERROR CoilsNotConnected');
+    if not FCoils.ReadAll(data) then Exit('ERROR ReadFailed');
+    Exit(Format('OK CH1 V=%s I=%s OUT=%s CH2 V=%s I=%s OUT=%s CH3 V=%s I=%s OUT=%s',
+      [FF(data[1].Volt), FF(data[1].Curr), OnOff(data[1].Output),
+       FF(data[2].Volt), FF(data[2].Curr), OnOff(data[2].Output),
+       FF(data[3].Volt), FF(data[3].Curr), OnOff(data[3].Output)]));
+  end;
+
+  if (verb = 'MODEL') and (Length(t) >= 3) and SameText(t[1], 'NOMINAL') then
+  begin
+    if SameText(t[2], 'B') then mk := cmModelB else mk := cmModelA;
+    FCalib.SetModel(mk);
+    FCalib.SetNominalModel;
+    UpdateModelStatus;
+    Exit('OK MODEL nominal' + CoilModelKindToStr(mk));
+  end;
+
+  if (verb = 'LOAD') and (Length(t) >= 3) and SameText(t[1], 'PROFILE') then
+  begin
+    rest := Trim(Copy(Cmd, Pos('PROFILE', up) + 8, MaxInt));
+    if FCalib.LoadFromFile(rest) then
+    begin UpdateModelStatus; RefreshPointList; Exit('OK loaded'); end
+    else Exit('ERROR LoadFailed');
+  end;
+  if (verb = 'SAVE') and (Length(t) >= 3) and SameText(t[1], 'PROFILE') then
+  begin
+    rest := Trim(Copy(Cmd, Pos('PROFILE', up) + 8, MaxInt));
+    if FCalib.SaveToFile(rest) then Exit('OK saved') else Exit('ERROR SaveFailed');
+  end;
+
+  if (verb = 'SOLVE') or (verb = 'SETFIELD') then
+  begin
+    if Length(t) < 4 then Exit('ERROR Usage: ' + verb + ' bx by bz');
+    b := Vec3(ArgF(1), ArgF(2), ArgF(3));
+    if not FieldSolveCal(FCalib, b, sol) then Exit('ERROR NoModel');
+    FView3D.SetTarget(b);
+    if verb = 'SETFIELD' then
+    begin
+      if not FCoils.Connected then Exit('ERROR CoilsNotConnected');
+      ctrl := TFieldController.Create(FCalib, FCoils);
+      try
+        if not ctrl.Apply(sol) then Exit('ERROR SendFailed');
+      finally
+        ctrl.Free;
+      end;
+    end;
+    Exit(Format('OK I %s SAT %d ACHIEVED %s',
+      [V3(sol.I), Ord(sol.AnySat), V3(sol.Achieved)]));
+  end;
+
+  if verb = 'SETCURRENTS' then
+  begin
+    if Length(t) < 4 then Exit('ERROR Usage: SETCURRENTS i1 i2 i3');
+    if not FCoils.Connected then Exit('ERROR CoilsNotConnected');
+    for ch := 1 to 3 do
+    begin
+      FCoils.SetCurrent(ch, ArgF(ch));
+      FCoils.Output(ch, True);
+    end;
+    Exit('OK');
+  end;
+
+  if verb = 'FIELDOFF' then
+  begin
+    if not FCoils.Connected then Exit('ERROR CoilsNotConnected');
+    if FCoils.AllOff then Exit('OK') else Exit('ERROR');
+  end;
+
+  if verb = 'CALIB' then
+  begin
+    if (Length(t) >= 2) and SameText(t[1], 'CLEAR') then
+    begin FCalib.ClearPoints; RefreshPointList; UpdateModelStatus; Exit('OK COUNT 0'); end;
+    if (Length(t) >= 2) and SameText(t[1], 'COUNT') then
+      Exit(Format('OK COUNT %d', [FCalib.PointCount]));
+    if (Length(t) >= 2) and SameText(t[1], 'ADD') then
+    begin
+      if Length(t) < 8 then Exit('ERROR Usage: CALIB ADD ix iy iz bx by bz');
+      v := Vec3(ArgF(2), ArgF(3), ArgF(4));
+      b := Vec3(ArgF(5), ArgF(6), ArgF(7));
+      FCalib.AddPoint(v, b);
+      RefreshPointList;
+      Exit(Format('OK COUNT %d', [FCalib.PointCount]));
+    end;
+    if (Length(t) >= 2) and SameText(t[1], 'FIT') then
+    begin
+      if FCalib.Fit then
+      begin UpdateModelStatus; Exit('OK RMS ' + FF(FCalib.ResidualRMS)); end
+      else Exit('ERROR FitFailed');
+    end;
+    Exit('ERROR Usage: CALIB CLEAR|ADD|COUNT|FIT');
+  end;
+
+  Result := 'ERROR UnknownCommand';
 end;
 
 procedure TfrmMain.Timer1Timer(Sender: TObject);

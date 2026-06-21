@@ -60,6 +60,11 @@
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
+        <Filename Value="src/uRemote.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uRemote"/>
+      </Unit>
+      <Unit>
         <Filename Value="src/uView3D.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>

@@ -49,6 +49,7 @@
         <DCCReference Include="src\uSensor.pas"/>
         <DCCReference Include="src\uCalib.pas"/>
         <DCCReference Include="src\uField.pas"/>
+        <DCCReference Include="src\uRemote.pas"/>
         <DCCReference Include="src\uView3D.pas"/>
         <DCCReference Include="src\uMainForm.pas">
             <Form>frmMain</Form>

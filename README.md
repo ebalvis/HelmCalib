@@ -124,6 +124,37 @@ bash tests/run.sh      # 115 logic assertions, exit = number of failures
 The logic is covered by the same console tests (115 assertions); the GUI and 3D
 view were verified on Win64.
 
+## Remote control (TCP)
+
+HelmCalib embeds a **TCP text server** (same style as HelmMagControl) so the whole
+system can be driven remotely from Python or any language. Enable it from the
+*Connection* tab (default port **4445**) or start the app with `-remote`
+(`-remote -port=NNNN` for a custom port).
+
+One line per command, responses `OK ...` / `ERROR ...`, UTF-8:
+
+```
+PING · STATUS · HELP
+CONNECT COILS <host> <port> · CONNECT SENSOR <ip> [tx] [rx] · DISCONNECT COILS|SENSOR
+GET MAG · GET MAGAVG <k> · READALL
+MODEL NOMINAL A|B · LOAD PROFILE <path> · SAVE PROFILE <path> · GET MODEL
+SOLVE <bx> <by> <bz> · SETFIELD <bx> <by> <bz> · SETCURRENTS <i1> <i2> <i3> · FIELDOFF
+CALIB CLEAR · CALIB ADD <ix iy iz bx by bz> · CALIB COUNT · CALIB FIT
+```
+
+A Python client is provided in
+[python-client-for-helmholtz-rig](https://github.com/ebalvis/python-client-for-helmholtz-rig)
+(`HelmCalibClient`):
+
+```python
+from helmcalib_control import HelmCalibClient
+c = HelmCalibClient("127.0.0.1", 4445); c.connect()
+c.model_nominal("A")
+print(c.solve(40, 20, 60))          # -> {'I': (1.61, 0.79, 2.39), 'saturated': False, ...}
+c.connect_coils("127.0.0.1", 4444)
+c.set_field(40, 20, 60)             # computes and sends the currents
+```
+
 ## Reference hardware
 
 - **Coils:** Bartington BHC2000 (3 orthogonal pairs). Model A: ~25 µT/A, 1.0 mT/axis,

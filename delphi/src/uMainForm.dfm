@@ -20,7 +20,7 @@
         Left = 8
         Top = 8
         Width = 404
-        Height = 476
+        Height = 412
         Caption = ' Bobinas (TCP — HelmMagControl) '
         TabOrder = 0
         object lblHost: TLabel
@@ -82,7 +82,7 @@
           Left = 12
           Top = 100
           Width = 376
-          Height = 344
+          Height = 280
           Font.Name = 'Courier New'
           ParentFont = False
           ReadOnly = True
@@ -94,7 +94,7 @@
         Left = 420
         Top = 8
         Width = 404
-        Height = 476
+        Height = 412
         Caption = ' Sensor (UDP — SensorCast) '
         TabOrder = 1
         object lblIP: TLabel
@@ -177,7 +177,7 @@
           Left = 12
           Top = 130
           Width = 376
-          Height = 314
+          Height = 250
           Font.Name = 'Courier New'
           ParentFont = False
           ReadOnly = True
