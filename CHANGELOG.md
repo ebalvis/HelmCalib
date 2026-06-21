@@ -4,6 +4,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
 ## [Unreleased]
 
+### Cambiado
+
+- **Vista 3D** (`uView3D`, ambas versiones): ahora dibuja **bobinas cuadradas** de
+  cobre (2 por eje) dentro de una **estructura cúbica de soporte** de aluminio, para
+  parecerse al hardware real (Bartington BHC2000), en vez de los anillos circulares.
+
 ### Añadido
 
 - **Port a Delphi (VCL / Win64)** en `delphi/`, probado con RAD Studio Athens

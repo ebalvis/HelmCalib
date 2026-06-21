@@ -2,8 +2,9 @@ unit uView3D;
 
 { Vista 3D wireframe sobre Canvas (sin librerías 3D).
 
-  Dibuja los 3 pares de bobinas de Helmholtz (anillos a escala de sus diámetros)
-  y la flecha del vector B (objetivo y, opcional, medido) desde el centro.
+  Dibuja la estructura cúbica de soporte (aluminio) y los 3 pares de bobinas
+  cuadradas de Helmholtz (cobre, a escala) tipo BHC2000, más la flecha del vector
+  B (objetivo y, opcional, medido) desde el centro.
   Proyección perspectiva propia; la escena se rota arrastrando con el ratón y se
   hace zoom con la rueda.
 
@@ -32,7 +33,8 @@ type
     FRW, FRH: Integer;          // dimensiones del destino actual
     procedure DoRender;
     function Project(const w: TVec3): TPoint;
-    procedure DrawRing(axis: Integer; radius, offset: Double; col: TColor);
+    procedure DrawSquareCoil(axis: Integer; half, offset: Double; col: TColor; w: Integer);
+    procedure DrawCube(s: Double; col: TColor);
     procedure DrawArrow(const v: TVec3; col: TColor; const txt: string);
     procedure DrawAxis(const dir: TVec3; col: TColor; const lbl: string);
   protected
@@ -55,7 +57,6 @@ type
 implementation
 
 const
-  RING_SEG = 48;
   DIAM: array[0..2] of Double = (2046, 2000, 1954);  // mm: X, Y, Z
   MAXDIAM = 2046.0;
   FOCAL = 2.6;
@@ -123,27 +124,58 @@ begin
   Result.Y := cy - Round(r[1] * f * scale);
 end;
 
-procedure TView3DPanel.DrawRing(axis: Integer; radius, offset: Double; col: TColor);
+{ Bobina cuadrada perpendicular al eje 'axis', lado 2*half, a 'offset' en ese eje. }
+procedure TView3DPanel.DrawSquareCoil(axis: Integer; half, offset: Double; col: TColor; w: Integer);
 var
+  c: array[0..4] of TVec3;
+  pts: array[0..4] of TPoint;
   i: Integer;
-  a: Double;
-  p: TVec3;
-  pts: array of TPoint;
 begin
-  SetLength(pts, RING_SEG + 1);
-  for i := 0 to RING_SEG do
-  begin
-    a := 2 * Pi * i / RING_SEG;
-    case axis of
-      0: p := Vec3(offset, radius * Cos(a), radius * Sin(a));
-      1: p := Vec3(radius * Cos(a), offset, radius * Sin(a));
-    else p := Vec3(radius * Cos(a), radius * Sin(a), offset);
+  case axis of
+    0: begin  // plano YZ
+      c[0] := Vec3(offset, -half, -half); c[1] := Vec3(offset,  half, -half);
+      c[2] := Vec3(offset,  half,  half); c[3] := Vec3(offset, -half,  half);
     end;
-    pts[i] := Project(p);
+    1: begin  // plano XZ
+      c[0] := Vec3(-half, offset, -half); c[1] := Vec3( half, offset, -half);
+      c[2] := Vec3( half, offset,  half); c[3] := Vec3(-half, offset,  half);
+    end;
+  else begin  // plano XY
+      c[0] := Vec3(-half, -half, offset); c[1] := Vec3( half, -half, offset);
+      c[2] := Vec3( half,  half, offset); c[3] := Vec3(-half,  half, offset);
+    end;
   end;
+  c[4] := c[0];
+  for i := 0 to 4 do pts[i] := Project(c[i]);
+  FCanvas.Pen.Color := col;
+  FCanvas.Pen.Width := w;
+  FCanvas.Polyline(pts);
+  FCanvas.Pen.Width := 1;
+end;
+
+{ Estructura cúbica de soporte (12 aristas) de semilado 's'. }
+procedure TView3DPanel.DrawCube(s: Double; col: TColor);
+const
+  EDG: array[0..11, 0..1] of Integer = (
+    (0,1),(0,2),(0,4),(1,3),(1,5),(2,3),(2,6),(3,7),(4,5),(4,6),(5,7),(6,7));
+var
+  v: array[0..7] of TVec3;
+  i: Integer;
+  a, b: TPoint;
+begin
+  for i := 0 to 7 do
+    v[i] := Vec3(((i and 1) * 2 - 1) * s,
+                 (((i shr 1) and 1) * 2 - 1) * s,
+                 (((i shr 2) and 1) * 2 - 1) * s);
   FCanvas.Pen.Color := col;
   FCanvas.Pen.Width := 1;
-  FCanvas.Polyline(pts);
+  for i := 0 to 11 do
+  begin
+    a := Project(v[EDG[i, 0]]);
+    b := Project(v[EDG[i, 1]]);
+    FCanvas.MoveTo(a.X, a.Y);
+    FCanvas.LineTo(b.X, b.Y);
+  end;
 end;
 
 procedure TView3DPanel.DrawAxis(const dir: TVec3; col: TColor; const lbl: string);
@@ -197,11 +229,13 @@ begin
 end;
 
 procedure TView3DPanel.DoRender;
+const
+  axisCol: array[0..2] of TColor = (clRed, clLime, clBlue);
+  COPPER  = TColor($00295C8C);   // cobre (BBGGRR) para los devanados
+  FRAMECOL = TColor($00777777);  // gris aluminio para la estructura
 var
   axis: Integer;
-  r: Double;
-  ringCol: array[0..2] of TColor = (clMaroon, clGreen, clNavy);
-  axisCol: array[0..2] of TColor = (clRed, clLime, clBlue);
+  half, sep: Double;
 begin
   FRot := Mat3Mult(RotX(FPitch), RotY(FYaw));
 
@@ -210,15 +244,19 @@ begin
   FCanvas.FillRect(0, 0, FRW, FRH);
   FCanvas.Brush.Style := bsClear;
 
-  // bobinas: 2 anillos (Helmholtz) por eje, separación = radio
+  // estructura cúbica de soporte (aluminio), algo mayor que las bobinas
+  DrawCube(0.62, FRAMECOL);
+
+  // 3 pares de bobinas CUADRADAS (Helmholtz) tipo BHC2000, en cobre
   for axis := 0 to 2 do
   begin
-    r := (DIAM[axis] / 2) / MAXDIAM;
-    DrawRing(axis, r, -r / 2, ringCol[axis]);
-    DrawRing(axis, r,  r / 2, ringCol[axis]);
+    half := (DIAM[axis] / 2) / MAXDIAM * 0.92;   // tamaño a escala del eje
+    sep := half * 0.55;                          // separación del par
+    DrawSquareCoil(axis, half, -sep, COPPER, 4);
+    DrawSquareCoil(axis, half,  sep, COPPER, 4);
   end;
 
-  // ejes del marco bobina
+  // ejes del marco bobina (cortos, para orientación)
   DrawAxis(Vec3(1, 0, 0), axisCol[0], 'X');
   DrawAxis(Vec3(0, 1, 0), axisCol[1], 'Y');
   DrawAxis(Vec3(0, 0, 1), axisCol[2], 'Z');
